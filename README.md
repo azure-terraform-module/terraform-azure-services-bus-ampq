@@ -1,0 +1,1 @@
+# terraform-azure-services-bus-ampq
