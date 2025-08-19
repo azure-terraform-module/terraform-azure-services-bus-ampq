@@ -18,3 +18,23 @@ output "hostname" {
   value       = "${azurerm_servicebus_namespace.servicebus_namespace.name}.servicebus.windows.net"
 }
 
+output "queue_names" {
+  description = "Names of Service Bus queues created"
+  value       = keys(azurerm_servicebus_queue.servicebus_queue)
+}
+
+output "queues" {
+  description = "Map of queue name to queue ID"
+  value       = { for name, q in azurerm_servicebus_queue.servicebus_queue : name => q.id }
+}
+
+output "topic_names" {
+  description = "Names of Service Bus topics created"
+  value       = keys(azurerm_servicebus_topic.servicebus_topic)
+}
+
+output "topics" {
+  description = "Map of topic name to topic ID"
+  value       = { for name, t in azurerm_servicebus_topic.servicebus_topic : name => t.id }
+}
+
