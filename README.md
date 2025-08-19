@@ -22,13 +22,13 @@ ensure that you have the following:
 specify how the service bus should be exposed:
 - `private`: uses private endpoint and private dns zones (no public access).
   
-  ![alt text](https://raw.githubusercontent.com/azure-terraform-module/terraform-azure-event-hubs-kafka/refs/heads/master/images/1.png)
+  ![alt text](https://raw.githubusercontent.com/azure-terraform-module/terraform-azure-services-bus-ampq/refs/heads/release/0.0.1/images/01.png)
 - `service`: uses service endpoints and ip/vnet rules.
   
-	![alt text](https://raw.githubusercontent.com/azure-terraform-module/terraform-azure-event-hubs-kafka/refs/heads/master/images/2.png)
+	![alt text](https://raw.githubusercontent.com/azure-terraform-module/terraform-azure-services-bus-ampq/refs/heads/release/0.0.1/images/02.png)
 - `public`: open to public internet access
   
-	![alt text](https://raw.githubusercontent.com/azure-terraform-module/terraform-azure-event-hubs-kafka/refs/heads/master/images/3.png)
+	![alt text](https://raw.githubusercontent.com/azure-terraform-module/terraform-azure-services-bus-ampq/refs/heads/release/0.0.1/images/03.png)
 
 ### 2.3. input variables
 
