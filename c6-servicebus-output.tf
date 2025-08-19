@@ -14,7 +14,7 @@ output "namespace" {
 }
 
 output "hostname" {
-  description = "The hostname of the Event Hub Namespace"
+  description = "The hostname of the Service Bus Namespace"
   value       = "${azurerm_servicebus_namespace.servicebus_namespace.name}.servicebus.windows.net"
 }
 

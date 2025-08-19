@@ -57,7 +57,7 @@ resource "azurerm_private_endpoint" "servicebus_private_endpoint" {
   ]
 }
 
-# Event Hub Namespace
+# Service Bus Namespace
 resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   name                          = var.namespace
   location                      = var.location
@@ -90,14 +90,14 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   }
 }
 
-# Event Hub Queue
+# Service Bus Queue
 resource "azurerm_servicebus_queue" "servicebus_queue" {
   for_each     = toset(var.queues)
   name         = each.key
   namespace_id = azurerm_servicebus_namespace.servicebus_namespace.id
 }
 
-# Event Hub Topic 
+# Service Bus Topic 
 resource "azurerm_servicebus_topic" "servicebus_topic" {
   for_each     = toset(var.topics)
   name         = each.key
