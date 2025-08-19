@@ -22,6 +22,11 @@ variable "servicebus_private_dns_zone_ids" {
 variable "network_mode" {
   description = "Network mode for Service bus private, service, public."
   type        = string
+  default     = "public"
+  validation {
+    condition = var.sku != "Premium" && contains(["private", "service"], var.network_mode) ? false : true
+    error_message = "Network mode private and service are only supported for Premium SKU."
+  }
 }
 
 ######################################
@@ -41,25 +46,41 @@ variable "sku" {
 variable "capacity" {
   description = "The capacity of the Service Bus namespace."
   type        = number
-  default     = 1
+  default     = null
+  validation {
+    condition     = var.sku == "Premium" ? var.capacity >= 1 : true
+    error_message = "Only Premium SKU can have capacity greater than 1."
+  }
 }
 
 variable "premium_messaging_partitions" {
   description = "Number of messaging partitions for Premium SKU. If null, falls back to capacity."
   type        = number
-  default     = 1
+  default     = null
+  validation {
+    condition     = var.sku == "Premium" ? var.premium_messaging_partitions >= 1 : true
+    error_message = "Only Premium SKU can have premium_messaging_partitions greater than 1."
+  }
 }
 
 variable "queues" {
-  description = "List of queues to create in the Service Bus namespace."
-  type        = list(string)
-  default     = []
+  description = "List of queue objects to create. Each item: { name, partitioning_enabled, requires_duplicate_detection }. Flags default to true."
+  type = list(object({
+    name                         = string
+    partitioning_enabled         = optional(bool)
+    requires_duplicate_detection = optional(bool)
+  }))
+  default = []
 }
 
 variable "topics" {
-  description = "List of topics to create in the Service Bus namespace."
-  type        = list(string)
-  default     = []
+  description = "List of topic objects to create. Each item: { name, partitioning_enabled, requires_duplicate_detection }. Flags default to true."
+  type = list(object({
+    name                         = string
+    partitioning_enabled         = optional(bool)
+    requires_duplicate_detection = optional(bool)
+  }))
+  default = []
 }
 
 variable "ip_rules" {

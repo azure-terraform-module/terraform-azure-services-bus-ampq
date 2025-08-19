@@ -5,7 +5,7 @@ this terraform module provisions an **azure service bus** namespace and its asso
 ## 1. features
 - support for **private**, **service**, and **public** access modes.
 - automatic provisioning of **private dns zones** and **virtual network links** if not provided.
-- configurable **ip rules** and **vnet rules** for service endpoint mode.
+- configurable **ip rules** and **vnet rules** for service endpoint mode (applies when `sku = "Premium"`).
 - optional creation of **queues** and **topics** inside the namespace.
 - system-assigned managed identity on the namespace.
 - supports tagging, resource grouping, and subnet customization.
@@ -35,19 +35,30 @@ specify how the service bus should be exposed:
 | name                              | type            | required | default  | description                                                                                  |
 | --------------------------------- | --------------- | -------- | -------- | -------------------------------------------------------------------------------------------- |
 | `namespace`                       | `string`        | ✅        | —        | the name of the service bus namespace.                                                       |
-| `queues`                          | `list(string)`  | ❌        | `[]`     | the list of queues to create in the namespace.                                               |
-| `topics`                          | `list(string)`  | ❌        | `[]`     | the list of topics to create in the namespace.                                               |
+| `queues`                          | `list(object({ name = string, partitioning_enabled = optional(bool), requires_duplicate_detection = optional(bool) }))` | ❌ | `[]` | queues to create. defaults: `partitioning_enabled = false`, `requires_duplicate_detection = false`. in Premium, `partitioning_enabled` must be false (enforced). |
+| `topics`                          | `list(object({ name = string, partitioning_enabled = optional(bool), requires_duplicate_detection = optional(bool) }))` | ❌ | `[]` | topics to create. defaults: `partitioning_enabled = false`, `requires_duplicate_detection = false`. in Premium, `partitioning_enabled` must be false (enforced). |
 | `sku`                             | `string`        | ❌        | `"Premium"` | the sku of the service bus namespace.                                                        |
-| `capacity`                        | `number`        | ❌        | `1`      | capacity (messaging units) for the namespace.                                                |
-| `premium_messaging_partitions`    | `number`        | ❌        | `1`      | number of messaging partitions for premium sku.                                              |
+| `capacity`                        | `number`        | ❌        | `1`      | capacity (messaging units). used only when `sku = "Premium"`; ignored otherwise.             |
+| `premium_messaging_partitions`    | `number`        | ❌        | `1`      | premium namespace partition count. used only when `sku = "Premium"`; ignored otherwise.      |
 | `network_mode`                    | `string`        | ✅        | —        | network mode: `private`, `service`, `public`.                                                |
 | `servicebus_private_dns_zone_ids` | `list(string)`  | ❌        | `[]`     | resource ids of private dns zones for service bus (used in private endpoint mode).           |
 | `subnet_ids`                      | `list(string)`  | ❌        | `[]`     | subnet ids used for private endpoints or service endpoints (see network mode behavior).      |
-| `ip_rules`                        | `list(string)`  | ❌        | `[]`     | cidr blocks to allow access (only for service endpoints).                                    |
+| `ip_rules`                        | `list(string)`  | ❌        | `[]`     | cidr blocks to allow access (only for service endpoints on Premium).                         |
 | `vnet_ids`                        | `list(string)`  | ❌        | `[]`     | vnet ids used for linking to private dns zone (only for private endpoints).                  |
 | `resource_group_name`             | `string`        | ✅        | —        | resource group where resources will be created.                                              |
 | `location`                        | `string`        | ✅        | —        | azure location where resources will be created.                                              |
 | `tags`                            | `map(string)`   | ❌        | `{}`     | tags to assign to the resources.                                                             |
+
+#### notes on premium sku behavior
+
+- When `sku = "Premium"`:
+  - Namespace-level `capacity` and `premium_messaging_partitions` are used. If not set, they default to provider defaults.
+  - Queue/Topic-level `partitioning_enabled` inputs are treated as non-applicable. The module will fail the plan if these are set to avoid confusion.
+  - Partitioning is controlled at the namespace level in Premium.
+
+#### notes on service mode
+
+- `network_mode = "service"` is intended for `sku = "Premium"`. with non-Premium SKUs, this module will not apply network rule sets; consider `public` or `private` instead.
 
 ### 2.4. example
 
@@ -97,13 +108,13 @@ module "servicebus" {
   }
 
   queues = [
-    "queue1",
-    "queue2"
+    { name = "queue1" },
+    { name = "queue2" }
   ]
 
   topics = [
-    "topic1",
-    "topic2"
+    { name = "topic1" },
+    { name = "topic2" }
   ]
 }
 ```
@@ -120,6 +131,7 @@ module "servicebus" {
   resource_group_name  = "my-rg"
   location             = "eastus"
   network_mode         = "service"
+  sku                  = "Premium"
 
   subnet_ids = [
     "/subscriptions/xxx/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet1"
@@ -136,12 +148,12 @@ module "servicebus" {
   }
 
   queues = [
-    "queue1"
+    { name = "queue1" }
   ]
 
   topics = [
-    "topic1",
-    "topic2"
+    { name = "topic1" },
+    { name = "topic2" }
   ]
 }
 ```
@@ -162,12 +174,12 @@ module "servicebus" {
   }
 
   queues = [
-    "queue1"
+    { name = "queue1" }
   ]
 
   topics = [
-    "topic1",
-    "topic2"
+    { name = "topic1" },
+    { name = "topic2" }
   ]
 }
 ```
@@ -212,5 +224,25 @@ output "namespace_id" {
 output "hostname" {
   description = "the hostname of the service bus namespace"
   value       = module.servicebus.hostname
+}
+ 
+output "queue_names" {
+  description = "names of service bus queues created"
+  value       = module.servicebus.queue_names
+}
+ 
+output "queues" {
+  description = "map of queue name to queue id"
+  value       = module.servicebus.queues
+}
+ 
+output "topic_names" {
+  description = "names of service bus topics created"
+  value       = module.servicebus.topic_names
+}
+ 
+output "topics" {
+  description = "map of topic name to topic id"
+  value       = module.servicebus.topics
 }
 ```

@@ -63,13 +63,13 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   location                      = var.location
   resource_group_name           = var.resource_group_name
   sku                           = var.sku
-  capacity                      = var.capacity
+  capacity                      = var.sku == "Premium" ? var.capacity : null
   tags                          = var.tags
   public_network_access_enabled = local.public_network_access
-  premium_messaging_partitions  = var.premium_messaging_partitions
+  premium_messaging_partitions  = var.sku == "Premium" ? var.premium_messaging_partitions : null
 
   dynamic "network_rule_set" {
-    for_each = local.network_rulesets
+    for_each = var.sku == "Premium" ? local.network_rulesets : []
     content {
       default_action                = network_rule_set.value.default_action
       public_network_access_enabled = network_rule_set.value.public_network_access_enabled
@@ -90,16 +90,44 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   }
 }
 
+# Create Service Bus queues and topics.
+# Defaults: 
+# - partitioning_enabled = false
+# - requires_duplicate_detection = false
+# Premium SKU: 
+# - partitioning_enabled must stay false (error if set true) because in Premium SKU, partitioning are defind in the namespace level.
+# - requires_duplicate_detection can be set other values.
+# Standard/Basic SKU: 
+# - Can be set other values.
+
 # Service Bus Queue
 resource "azurerm_servicebus_queue" "servicebus_queue" {
-  for_each     = toset(var.queues)
-  name         = each.key
+  for_each     = { for q in var.queues : q.name => q }
+  name         = each.value.name
   namespace_id = azurerm_servicebus_namespace.servicebus_namespace.id
+  partitioning_enabled          = lookup(each.value, "partitioning_enabled", false)
+  requires_duplicate_detection  = lookup(each.value, "requires_duplicate_detection", false)
+
+  lifecycle {
+    precondition {
+      condition     = !(var.sku == "Premium" && lookup(each.value, "partitioning_enabled", false) == true)
+      error_message = "partitioning_enabled is ignored for Premium SKU; remove this setting or switch to Standard/Basic."
+    }
+  }
 }
 
 # Service Bus Topic 
 resource "azurerm_servicebus_topic" "servicebus_topic" {
-  for_each     = toset(var.topics)
-  name         = each.key
+  for_each     = { for t in var.topics : t.name => t }
+  name         = each.value.name
   namespace_id = azurerm_servicebus_namespace.servicebus_namespace.id
+  partitioning_enabled          = lookup(each.value, "partitioning_enabled", false)
+  requires_duplicate_detection  = lookup(each.value, "requires_duplicate_detection", false)
+
+  lifecycle {
+    precondition {
+      condition     = !(var.sku == "Premium" && lookup(each.value, "partitioning_enabled", false) == true)
+      error_message = "partitioning_enabled is ignored for Premium SKU; remove this setting or switch to Standard/Basic."
+    }
+  }
 }
