@@ -12,7 +12,7 @@ locals {
   is_public  = var.network_mode == "public"  # Public endpoint  - Traffic over the internet
 
   # Public network access - Service endpoints, Public endpoints
-  public_network_access = local.is_service || local.is_public ? true : false
+  public_network_access = local.is_private ? false : (local.is_service || local.is_public)
 
   # Determine whether to create the private DNS zone (no ID provided)
   create_private_dns_zone = local.is_private && (var.private_dns_zone_id == null || trimspace(var.private_dns_zone_id) == "")

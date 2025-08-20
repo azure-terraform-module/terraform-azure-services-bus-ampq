@@ -113,11 +113,12 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
     content {
       default_action                = network_rule_set.value.default_action
       public_network_access_enabled = network_rule_set.value.public_network_access_enabled
+      trusted_service_access_enabled = network_rule_set.value.trusted_service_access_enabled
       dynamic "network_rules" {
-        for_each = var.subnet_ids
+        for_each = local.is_service ? toset(var.subnet_ids) : toset([])
         content {
           subnet_id                            = network_rules.value
-          ignore_missing_vnet_service_endpoint = false
+          ignore_missing_vnet_service_endpoint = true
         }
       }
     }
@@ -127,6 +128,13 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   identity {
     type         = var.customer_managed_key == null ? "SystemAssigned" : "UserAssigned"
     identity_ids = var.customer_managed_key == null ? null : [var.customer_managed_key.user_assigned_identity_id]
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.customer_managed_key == null || try(var.customer_managed_key.user_assigned_identity_id, null) != null
+      error_message = "customer_managed_key requires user_assigned_identity_id for Key Vault access."
+    }
   }
 
   dynamic "customer_managed_key" {
