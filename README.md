@@ -135,11 +135,6 @@ module "servicebus" {
     "/subscriptions/xxx/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet1"
   ]
 
-  # optional IP allowlist (Premium service mode)
-  ip_rules = [
-    "203.0.113.10"
-  ]
-
 
   tags = {
     environment = "dev"
