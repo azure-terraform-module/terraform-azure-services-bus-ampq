@@ -70,7 +70,6 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
 
   minimum_tls_version        = "1.2"
   local_authentication_enabled = true
-  infrastructure_encryption_enabled = true
 
 
   dynamic "network_rule_set" {
