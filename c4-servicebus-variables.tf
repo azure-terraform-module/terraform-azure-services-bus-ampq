@@ -73,7 +73,7 @@ variable "premium_messaging_partitions" {
 }
 
 variable "queues" {
-  +  description = "List of queue objects to create. Each item: { name, partitioning_enabled, requires_duplicate_detection }. Flags default to false."
+  description = "List of queue objects to create. Each item: { name, partitioning_enabled, requires_duplicate_detection }. Flags default to false."
   type = list(object({
     name                         = string
     partitioning_enabled         = optional(bool)
