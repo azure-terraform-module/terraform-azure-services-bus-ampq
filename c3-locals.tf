@@ -33,8 +33,8 @@ locals {
   network_rulesets = [
     {
       default_action                 = local.is_public ? "Allow" : "Deny" # If use public endpoint, must allow all traffic
-      trusted_service_access_enabled = true
-      public_network_access_enabled  = local.public_network_access # Service endpoints, Public endpoints
+      trusted_services_allowed = true
+      public_network_access_enabled  = local.public_network_access
 
       # Vnet rules - Service endpoints
       virtual_network_rule = local.is_service ? [
