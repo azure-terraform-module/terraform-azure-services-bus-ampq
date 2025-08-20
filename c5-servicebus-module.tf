@@ -9,7 +9,7 @@ resource "azurerm_private_dns_zone" "private_dns_servicebus" {
 # Create private DNS zone link - Private endpoint
 resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns_zone_link" {
   for_each = (
-    local.is_private && length(local.private_dns_zone_ids) == 0
+    local.is_private && length(var.servicebus_private_dns_zone_ids) == 0
     ? toset(var.vnet_ids)
     : toset([])
   )
