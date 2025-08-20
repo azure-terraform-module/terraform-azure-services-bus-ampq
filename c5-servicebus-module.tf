@@ -76,6 +76,7 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
     content {
       default_action                = network_rule_set.value.default_action
       public_network_access_enabled = network_rule_set.value.public_network_access_enabled
+      trusted_services_allowed     = network_rule_set.value.trusted_service_access_enabled
       dynamic "network_rules" {
         for_each = var.subnet_ids
         content {
