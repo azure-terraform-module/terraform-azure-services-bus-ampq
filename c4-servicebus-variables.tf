@@ -48,18 +48,18 @@ variable "capacity" {
   type        = number
   default     = null
   validation {
-    condition     = var.sku == "Premium" ? var.capacity >= 1 : true
-    error_message = "Only Premium SKU can have capacity greater than 1."
+    condition     = var.sku != "Premium" && var.capacity != null ? false : true
+    error_message = "Only Premium SKU can set capacity."
   }
 }
 
 variable "premium_messaging_partitions" {
-  description = "Number of messaging partitions for Premium SKU. If null, falls back to capacity."
+  description = "Number of messaging partitions for Premium SKU"
   type        = number
   default     = null
   validation {
-    condition     = var.sku == "Premium" ? var.premium_messaging_partitions >= 1 : true
-    error_message = "Only Premium SKU can have premium_messaging_partitions greater than 1."
+    condition     = var.sku != "Premium" && var.premium_messaging_partitions != null ? false : true
+    error_message = "Only Premium SKU can set messaging partitions."
   }
 }
 
