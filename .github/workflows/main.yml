@@ -2,7 +2,7 @@
 name: Checkov
 on:
   push:
-    branches: [ "main", "master", "release/0.0.1" ]
+    branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
 
