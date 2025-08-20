@@ -44,6 +44,8 @@ specify how the service bus should be exposed:
 | `servicebus_private_dns_zone_ids` | `list(string)`  | ❌        | `[]`     | resource ids of private dns zones for service bus (used in private endpoint mode).           |
 | `subnet_ids`                      | `list(string)`  | ❌        | `[]`     | subnet ids used for private endpoints or service endpoints (see network mode behavior).      |
 | `vnet_ids`                        | `list(string)`  | ❌        | `[]`     | vnet ids used for linking to private dns zone (only for private endpoints).                  |
+| `local_auth_enabled`              | `bool`          | ❌        | `false`  | whether to enable local (SAS) auth. set to `false` to enforce Entra ID only.                 |
+| `customer_managed_key`            | `object({ key_vault_key_id = string, user_assigned_identity_id = optional(string) })` | ❌ | `null` | cmk for encryption at rest (Premium only). requires a managed identity with key vault access. |
 | `resource_group_name`             | `string`        | ✅        | —        | resource group where resources will be created.                                              |
 | `location`                        | `string`        | ✅        | —        | azure location where resources will be created.                                              |
 | `tags`                            | `map(string)`   | ❌        | `{}`     | tags to assign to the resources.                                                             |
@@ -135,6 +137,12 @@ module "servicebus" {
     "/subscriptions/xxx/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet1"
   ]
 
+  # encryption with customer-managed key (Premium)
+  customer_managed_key = {
+    key_vault_key_id          = "/subscriptions/xxx/resourceGroups/my-kv-rg/providers/Microsoft.KeyVault/vaults/my-kv/keys/my-sb-key"
+    user_assigned_identity_id = "/subscriptions/xxx/resourceGroups/my-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/sb-kv-mi"
+  }
+
 
   tags = {
     environment = "dev"
@@ -163,6 +171,8 @@ module "servicebus" {
   location             = "eastus"
   network_mode         = "public"
   sku                  = "Standard"
+
+  local_auth_enabled = true
 
   tags = {
     environment = "dev"

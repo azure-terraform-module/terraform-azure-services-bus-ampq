@@ -69,6 +69,7 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   premium_messaging_partitions  = var.sku == "Premium" ? var.premium_messaging_partitions : null
 
   minimum_tls_version        = "1.2"
+  local_auth_enabled         = var.local_auth_enabled
 
   dynamic "network_rule_set" {
     for_each = var.sku == "Premium" ? local.network_rulesets : []
@@ -87,7 +88,16 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
 
 
   identity {
-    type = "SystemAssigned"
+    type         = var.customer_managed_key == null ? "SystemAssigned" : "UserAssigned"
+    identity_ids = var.customer_managed_key == null ? null : [var.customer_managed_key.user_assigned_identity_id]
+  }
+
+  dynamic "customer_managed_key" {
+    for_each = var.customer_managed_key == null ? [] : [var.customer_managed_key]
+    content {
+      key_vault_key_id = customer_managed_key.value.key_vault_key_id
+      identity_id      = customer_managed_key.value.user_assigned_identity_id
+    }
   }
 }
 

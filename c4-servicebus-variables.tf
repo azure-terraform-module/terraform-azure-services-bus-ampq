@@ -92,3 +92,25 @@ variable "topics" {
   default = []
 }
 
+######################################
+##        SECURITY & ENCRYPTION     ##
+######################################
+variable "local_auth_enabled" {
+  description = "Whether to enable local (SAS) authentication on the Service Bus namespace. Set to false to enforce Entra ID only."
+  type        = bool
+  default     = false
+}
+
+variable "customer_managed_key" {
+  description = "Customer-managed key configuration for encrypting the Service Bus namespace. Premium SKU only. Requires a user-assigned identity with access to the key."
+  type = object({
+    key_vault_key_id          = string
+    user_assigned_identity_id = string
+  })
+  default = null
+  validation {
+    condition     = var.customer_managed_key == null || var.sku == "Premium"
+    error_message = "customer_managed_key requires Premium SKU."
+  }
+}
+
