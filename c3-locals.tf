@@ -17,7 +17,7 @@ locals {
 
   # Create private DNS zone if not provided - Private endpoint
   private_dns_zone_ids = local.is_private ? (
-    length(var.servicebus_private_dns_zone_ids) > 0 ? var.servicebus_private_dns_zone_ids : [
+    length(var.private_dns_zone_ids) > 0 ? var.private_dns_zone_ids : [
       azurerm_private_dns_zone.private_dns_servicebus[0].id
     ]
   ) : []

@@ -13,7 +13,7 @@ variable "subnet_ids" {
   default     = []
 }
 
-variable "servicebus_private_dns_zone_ids" {
+variable "private_dns_zone_ids" {
   description = "The resource ID of the private DNS zone"
   type        = list(string)
   default     = []

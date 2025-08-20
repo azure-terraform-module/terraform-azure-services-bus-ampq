@@ -1,6 +1,6 @@
 # Create private DNS zone if not provided - Private endpoint
 resource "azurerm_private_dns_zone" "private_dns_servicebus" {
-  count               = local.is_private && length(var.servicebus_private_dns_zone_ids) == 0 ? 1 : 0
+  count               = local.is_private && length(var.private_dns_zone_ids) == 0 ? 1 : 0
   name                = "privatelink.servicebus.windows.net"
   resource_group_name = var.resource_group_name
   tags                = var.tags
@@ -9,7 +9,7 @@ resource "azurerm_private_dns_zone" "private_dns_servicebus" {
 # Create private DNS zone link - Private endpoint
 resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns_zone_link" {
   for_each = (
-    local.is_private && length(var.servicebus_private_dns_zone_ids) == 0
+    local.is_private && length(local.private_dns_zone_ids) == 0
     ? toset(var.vnet_ids)
     : toset([])
   )
@@ -76,7 +76,6 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
     content {
       default_action                = network_rule_set.value.default_action
       public_network_access_enabled = network_rule_set.value.public_network_access_enabled
-      trusted_services_allowed     = network_rule_set.value.trusted_service_access_enabled
       dynamic "network_rules" {
         for_each = var.subnet_ids
         content {
