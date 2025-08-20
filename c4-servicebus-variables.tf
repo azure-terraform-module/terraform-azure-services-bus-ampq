@@ -83,8 +83,3 @@ variable "topics" {
   default = []
 }
 
-variable "ip_rules" {
-  description = "CIDR blocks to allow access to the Azure Cache - Only for service endpoints."
-  type        = list(string)
-  default     = []
-}

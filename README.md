@@ -43,7 +43,6 @@ specify how the service bus should be exposed:
 | `network_mode`                    | `string`        | ✅        | —        | network mode: `private`, `service`, `public`.                                                |
 | `servicebus_private_dns_zone_ids` | `list(string)`  | ❌        | `[]`     | resource ids of private dns zones for service bus (used in private endpoint mode).           |
 | `subnet_ids`                      | `list(string)`  | ❌        | `[]`     | subnet ids used for private endpoints or service endpoints (see network mode behavior).      |
-| `ip_rules`                        | `list(string)`  | ❌        | `[]`     | cidr blocks to allow access (only for service endpoints on Premium).                         |
 | `vnet_ids`                        | `list(string)`  | ❌        | `[]`     | vnet ids used for linking to private dns zone (only for private endpoints).                  |
 | `resource_group_name`             | `string`        | ✅        | —        | resource group where resources will be created.                                              |
 | `location`                        | `string`        | ✅        | —        | azure location where resources will be created.                                              |
@@ -120,7 +119,6 @@ module "servicebus" {
 ```
 
 network mode - service
-- when using service mode, `subnet_ids` define which subnets can access the namespace via service endpoints. you can also allow specific public ips via `ip_rules`.
 
 ```hcl
 module "servicebus" {
@@ -137,10 +135,6 @@ module "servicebus" {
     "/subscriptions/xxx/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet1"
   ]
 
-  # optional variables
-  ip_rules = [
-    "203.0.113.10"
-  ]
 
   tags = {
     environment = "dev"

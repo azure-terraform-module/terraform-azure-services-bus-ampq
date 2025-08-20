@@ -73,7 +73,6 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
     content {
       default_action                = network_rule_set.value.default_action
       public_network_access_enabled = network_rule_set.value.public_network_access_enabled
-      ip_rules                      = network_rule_set.value.ip_rule
       dynamic "network_rules" {
         for_each = var.subnet_ids
         content {

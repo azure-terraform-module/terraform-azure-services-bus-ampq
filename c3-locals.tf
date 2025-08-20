@@ -36,13 +36,6 @@ locals {
           ignore_missing_virtual_network_service_endpoint = true
         }
       ] : []
-
-      # IP rules - Service endpoints
-      ip_rule = local.is_service ? [
-        for ip in var.ip_rules : {
-          ip_mask = ip
-          action  = "Allow"
-      }] : []
     }
   ]
 
