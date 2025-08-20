@@ -95,6 +95,7 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   dynamic "customer_managed_key" {
     for_each = var.customer_managed_key == null ? [] : [var.customer_managed_key]
     content {
+      infrastructure_encryption_enabled = true
       key_vault_key_id = customer_managed_key.value.key_vault_key_id
       identity_id      = customer_managed_key.value.user_assigned_identity_id
     }
