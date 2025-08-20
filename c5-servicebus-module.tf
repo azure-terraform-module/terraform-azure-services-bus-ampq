@@ -69,8 +69,6 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   premium_messaging_partitions  = var.sku == "Premium" ? var.premium_messaging_partitions : null
 
   minimum_tls_version        = "1.2"
-  local_authentication_enabled = true
-
 
   dynamic "network_rule_set" {
     for_each = var.sku == "Premium" ? local.network_rulesets : []
