@@ -2,8 +2,8 @@ locals {
   # Get subnet names from subnet IDs
   subnet_info = {
     for subnet_id in var.subnet_ids : subnet_id => {
-      name = try(regex("subnets/([^/]+)$", subnet_id)[0], "subnet-${md5(subnet_id)}")
-    }
+      name = try(element(split("/", subnet_id), length(split("/", subnet_id)) - 1), "subnet-${substr(md5(subnet_id), 0, 8)}")
+    } 
   }
 
   # Endpoint types

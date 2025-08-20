@@ -27,6 +27,10 @@ variable "network_mode" {
     condition = var.sku != "Premium" && contains(["private", "service"], var.network_mode) ? false : true
     error_message = "Network mode private and service are only supported for Premium SKU."
   }
+  validation {
+    condition     = contains(["public", "private", "service"], var.network_mode)
+    error_message = "network_mode must be one of: public, private, service."
+  }
 }
 
 ######################################
@@ -48,8 +52,13 @@ variable "capacity" {
   type        = number
   default     = null
   validation {
-    condition     = var.sku != "Premium" && var.capacity != null ? false : true
-    error_message = "Only Premium SKU can set capacity."
+    condition     = var.capacity == null || contains([1, 2, 4, 8], var.capacity)
+    error_message = "capacity must be one of: 1, 2, 4, 8."
+  }
+
+  validation {
+    condition     = var.sku != "Premium" || var.capacity != null
+    error_message = "For Premium SKU, capacity is required (1, 2, 4, or 8). You can omit it to use the module’s default of 1."
   }
 }
 

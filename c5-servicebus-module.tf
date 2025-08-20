@@ -1,7 +1,7 @@
 # Create private DNS zone if not provided - Private endpoint
 resource "azurerm_private_dns_zone" "private_dns_servicebus" {
   count               = local.is_private && length(var.servicebus_private_dns_zone_ids) == 0 ? 1 : 0
-  name                = "privatelink.servicebus.cache.windows.net"
+  name                = "privatelink.servicebus.windows.net"
   resource_group_name = var.resource_group_name
   tags                = var.tags
 }
@@ -44,7 +44,7 @@ resource "azurerm_private_endpoint" "servicebus_private_endpoint" {
   }
 
   dynamic "private_dns_zone_group" {
-    for_each = true ? [1] : []
+    for_each = length(local.private_dns_zone_ids) > 0 ? [1] : []
     content {
       name                 = "default"
       private_dns_zone_ids = local.private_dns_zone_ids
@@ -63,7 +63,7 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   location                      = var.location
   resource_group_name           = var.resource_group_name
   sku                           = var.sku
-  capacity                      = var.sku == "Premium" ? var.capacity : null
+  capacity                      = var.sku == "Premium" ? coalesce(var.capacity, 1) : null
   tags                          = var.tags
   public_network_access_enabled = local.public_network_access
   premium_messaging_partitions  = var.sku == "Premium" ? var.premium_messaging_partitions : null

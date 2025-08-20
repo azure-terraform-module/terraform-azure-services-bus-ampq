@@ -43,6 +43,7 @@ specify how the service bus should be exposed:
 | `network_mode`                    | `string`        | ✅        | —        | network mode: `private`, `service`, `public`.                                                |
 | `servicebus_private_dns_zone_ids` | `list(string)`  | ❌        | `[]`     | resource ids of private dns zones for service bus (used in private endpoint mode).           |
 | `subnet_ids`                      | `list(string)`  | ❌        | `[]`     | subnet ids used for private endpoints or service endpoints (see network mode behavior).      |
+| `ip_rules`                        | `list(string)`  | ❌        | `[]`     | cidr blocks to allow access (only effective in service mode on Premium).                     |
 | `vnet_ids`                        | `list(string)`  | ❌        | `[]`     | vnet ids used for linking to private dns zone (only for private endpoints).                  |
 | `resource_group_name`             | `string`        | ✅        | —        | resource group where resources will be created.                                              |
 | `location`                        | `string`        | ✅        | —        | azure location where resources will be created.                                              |
@@ -57,7 +58,7 @@ specify how the service bus should be exposed:
 
 #### Notes on service mode
 
-- `network_mode = "service"` and `network_mode = "private"` is intended for `sku = "Premium"`. with non-Premium SKUs, this module will not apply network rule sets; consider `public` instead.
+- `network_mode = "service"` applies network rules only when `sku = "Premium"`. with non-Premium SKUs, network rules are not applied by this module; consider `public` or use `private` endpoints instead.
 
 ### 2.4. example
 
@@ -133,6 +134,11 @@ module "servicebus" {
 
   subnet_ids = [
     "/subscriptions/xxx/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/subnet1"
+  ]
+
+  # optional IP allowlist (Premium service mode)
+  ip_rules = [
+    "203.0.113.10"
   ]
 
 
