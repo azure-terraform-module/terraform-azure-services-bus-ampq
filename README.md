@@ -43,7 +43,6 @@ specify how the service bus should be exposed:
 | `network_mode`                    | `string`        | ✅        | —        | network mode: `private`, `service`, `public`.                                                |
 | `servicebus_private_dns_zone_ids` | `list(string)`  | ❌        | `[]`     | resource ids of private dns zones for service bus (used in private endpoint mode).           |
 | `subnet_ids`                      | `list(string)`  | ❌        | `[]`     | subnet ids used for private endpoints or service endpoints (see network mode behavior).      |
-| `ip_rules`                        | `list(string)`  | ❌        | `[]`     | cidr blocks to allow access (only effective in service mode on Premium).                     |
 | `vnet_ids`                        | `list(string)`  | ❌        | `[]`     | vnet ids used for linking to private dns zone (only for private endpoints).                  |
 | `resource_group_name`             | `string`        | ✅        | —        | resource group where resources will be created.                                              |
 | `location`                        | `string`        | ✅        | —        | azure location where resources will be created.                                              |
@@ -63,11 +62,11 @@ specify how the service bus should be exposed:
 ### 2.4. example
 
 ### variable requirement by `network_mode`
-| `network_mode`       | `servicebus_private_dns_zone_ids` | `subnet_ids`              | `vnet_ids` | `ip_rules` |
-| -------------------- | --------------------------------- | ------------------------- | ---------- | ---------- |
-| **private endpoint** | 🟦                                | ✅ (at least 1)           | ✅         | ❌         |
-| **service endpoint** | ❌                                | ✅                        | ❌         | 🟦         |
-| **public endpoint**  | ❌                                | ❌                        | ❌         | ❌         |
+| `network_mode`       | `servicebus_private_dns_zone_ids` | `subnet_ids`              | `vnet_ids` | 
+| -------------------- | --------------------------------- | ------------------------- | ---------- | 
+| **private endpoint** | 🟦                                | ✅ (at least 1)           | ✅         |
+| **service endpoint** | ❌                                | ✅                        | ❌         |
+| **public endpoint**  | ❌                                | ❌                        | ❌         | 
 
 ##### notes:
 - ✅ = **required**
