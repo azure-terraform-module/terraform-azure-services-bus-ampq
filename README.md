@@ -40,7 +40,7 @@ specify how the service bus should be exposed:
 | `sku`                             | `string`        | ❌        | `"Premium"` | the sku of the service bus namespace.                                                        |
 | `capacity`                        | `number`        | ❌        | `1`      | capacity (messaging units). used only when `sku = "Premium"`; ignored otherwise.             |
 | `premium_messaging_partitions`    | `number`        | ❌        | `1`      | premium namespace partition count. used only when `sku = "Premium"`; ignored otherwise.      |
-| `network_mode`                    | `string`        | ✅        | —        | network mode: `private`, `service`, `public`.                                                |
+| `network_mode`                    | `string`        | ❌        | `public` | network mode: `private`, `service`, `public`.                                                |
 | `servicebus_private_dns_zone_ids` | `list(string)`  | ❌        | `[]`     | resource ids of private dns zones for service bus (used in private endpoint mode).           |
 | `subnet_ids`                      | `list(string)`  | ❌        | `[]`     | subnet ids used for private endpoints or service endpoints (see network mode behavior).      |
 | `vnet_ids`                        | `list(string)`  | ❌        | `[]`     | vnet ids used for linking to private dns zone (only for private endpoints).                  |

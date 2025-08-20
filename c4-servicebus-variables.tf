@@ -57,7 +57,7 @@ variable "capacity" {
   }
 
   validation {
-    condition     = var.sku != "Premium" || var.capacity != null
+    condition     = var.sku != "Premium" ? var.capacity == null : true
     error_message = "For Premium SKU, capacity is required (1, 2, 4, or 8). You can omit it to use the module’s default of 1."
   }
 }
@@ -73,7 +73,7 @@ variable "premium_messaging_partitions" {
 }
 
 variable "queues" {
-  description = "List of queue objects to create. Each item: { name, partitioning_enabled, requires_duplicate_detection }. Flags default to true."
+  +  description = "List of queue objects to create. Each item: { name, partitioning_enabled, requires_duplicate_detection }. Flags default to false."
   type = list(object({
     name                         = string
     partitioning_enabled         = optional(bool)
@@ -83,7 +83,7 @@ variable "queues" {
 }
 
 variable "topics" {
-  description = "List of topic objects to create. Each item: { name, partitioning_enabled, requires_duplicate_detection }. Flags default to true."
+  description = "List of topic objects to create. Each item: { name, partitioning_enabled, requires_duplicate_detection }. Flags default to false."
   type = list(object({
     name                         = string
     partitioning_enabled         = optional(bool)
