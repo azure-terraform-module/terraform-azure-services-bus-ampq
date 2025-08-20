@@ -49,16 +49,16 @@ specify how the service bus should be exposed:
 | `location`                        | `string`        | ✅        | —        | azure location where resources will be created.                                              |
 | `tags`                            | `map(string)`   | ❌        | `{}`     | tags to assign to the resources.                                                             |
 
-#### notes on premium sku behavior
+#### Notes on `Premium` sku behavior
 
 - When `sku = "Premium"`:
   - Namespace-level `capacity` and `premium_messaging_partitions` are used. If not set, they default to provider defaults.
   - Queue/Topic-level `partitioning_enabled` inputs are treated as non-applicable. The module will fail the plan if these are set to avoid confusion.
   - Partitioning is controlled at the namespace level in Premium.
 
-#### notes on service mode
+#### Notes on service mode
 
-- `network_mode = "service"` is intended for `sku = "Premium"`. with non-Premium SKUs, this module will not apply network rule sets; consider `public` or `private` instead.
+- `network_mode = "service"` and `network_mode = "private"` is intended for `sku = "Premium"`. with non-Premium SKUs, this module will not apply network rule sets; consider `public` instead.
 
 ### 2.4. example
 
@@ -148,7 +148,8 @@ module "servicebus" {
   }
 
   queues = [
-    { name = "queue1" }
+    { name = "queue1", requires_duplicate_detection = true },
+    { name = "queue2", requires_duplicate_detection = false }
   ]
 
   topics = [
@@ -167,6 +168,7 @@ module "servicebus" {
   resource_group_name  = "my-rg"
   location             = "eastus"
   network_mode         = "public"
+  sku                  = "Standard"
 
   tags = {
     environment = "dev"
@@ -174,12 +176,13 @@ module "servicebus" {
   }
 
   queues = [
-    { name = "queue1" }
+    { name = "queue1", partitioning_enabled = false, requires_duplicate_detection = true },
+    { name = "queue2", partitioning_enabled = false, requires_duplicate_detection = false }
   ]
 
   topics = [
-    { name = "topic1" },
-    { name = "topic2" }
+    { name = "topic1", partitioning_enabled = false, requires_duplicate_detection = true },
+    { name = "topic2", partitioning_enabled = false, requires_duplicate_detection = false }
   ]
 }
 ```
