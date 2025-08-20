@@ -117,7 +117,7 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
       dynamic "network_rules" {
         for_each = local.is_service ? toset(var.subnet_ids) : toset([])
         content {
-          subnet_id                            = network_rules.value
+          subnet_id                            = network_rules.value.subnet_id
           ignore_missing_vnet_service_endpoint = network_rules.value.ignore_missing_virtual_network_service_endpoint
         }
       }
