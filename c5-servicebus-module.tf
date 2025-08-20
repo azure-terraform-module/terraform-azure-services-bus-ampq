@@ -1,18 +1,14 @@
 # Create private DNS zone if not provided - Private endpoint
 resource "azurerm_private_dns_zone" "private_dns_servicebus" {
-  count               = local.is_private && length(var.private_dns_zone_ids) == 0 ? 1 : 0
+  count               = local.create_private_dns_zone ? 1 : 0
   name                = "privatelink.servicebus.windows.net"
   resource_group_name = var.resource_group_name
   tags                = var.tags
 }
 
-# Create private DNS zone link - Private endpoint
+# Case 1: User not providing a private DNS zone ID, create a new one and link it to VNets - Private endpoint
 resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns_zone_link" {
-  for_each = (
-    local.is_private && length(local.private_dns_zone_ids) == 0
-    ? toset(var.vnet_ids)
-    : toset([])
-  )
+  for_each = local.create_private_dns_zone ? toset(var.vnet_ids) : toset([])
 
   name                  = "${var.namespace}-dns-link-${basename(each.key)}"
   private_dns_zone_name = azurerm_private_dns_zone.private_dns_servicebus[0].name
@@ -24,6 +20,20 @@ resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns
     azurerm_private_dns_zone.private_dns_servicebus
   ]
 }
+#####
+
+# Case 2: User providing a private DNS zone ID, create a link to VNets - Private endpoint
+resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns_zone_user_link" {
+  for_each = !local.create_private_dns_zone && local.user_dns_zone_id != null ? toset(var.vnet_ids) : toset([])
+
+  name                  = "${var.namespace}-dns-link-${basename(each.key)}"
+  private_dns_zone_name = local.user_dns_zone_name
+  resource_group_name   = local.user_dns_zone_rg
+  virtual_network_id    = each.value
+  tags                  = var.tags
+}
+
+#####
 
 # Create private endpoint - Private endpoint
 resource "azurerm_private_endpoint" "servicebus_private_endpoint" {
@@ -42,18 +52,45 @@ resource "azurerm_private_endpoint" "servicebus_private_endpoint" {
     is_manual_connection           = false
     subresource_names              = ["namespace"]
   }
-
-  dynamic "private_dns_zone_group" {
-    for_each = length(local.private_dns_zone_ids) > 0 ? [1] : []
-    content {
-      name                 = "default"
-      private_dns_zone_ids = local.private_dns_zone_ids
-    }
-  }
+  
   tags = var.tags
   depends_on = [
     azurerm_private_dns_zone.private_dns_servicebus,
     azurerm_private_dns_zone_virtual_network_link.servicebus_private_dns_zone_link
+  ]
+}
+
+# Manual Private DNS A record aggregating all Private Endpoint IPs (module-created zone)
+resource "azurerm_private_dns_a_record" "servicebus_private_dns_record" {
+  count               = local.create_private_dns_zone && length(azurerm_private_endpoint.servicebus_private_endpoint) > 0 ? 1 : 0
+  name                = var.namespace
+  zone_name           = azurerm_private_dns_zone.private_dns_servicebus[0].name
+  resource_group_name = azurerm_private_dns_zone.private_dns_servicebus[0].resource_group_name
+  ttl                 = 300
+  records             = sort(distinct(flatten([
+    for pe in values(azurerm_private_endpoint.servicebus_private_endpoint) : try(flatten([
+      for cfg in pe.custom_dns_configs : cfg.ip_addresses
+    ]), [])
+  ])))
+  depends_on = [
+    azurerm_private_endpoint.servicebus_private_endpoint
+  ]
+}
+
+# Manual Private DNS A record aggregating all Private Endpoint IPs (user-provided zone)
+resource "azurerm_private_dns_a_record" "servicebus_private_dns_record_user" {
+  count               = !local.create_private_dns_zone && local.user_dns_zone_id != null && length(azurerm_private_endpoint.servicebus_private_endpoint) > 0 ? 1 : 0
+  name                = var.namespace
+  zone_name           = local.user_dns_zone_name
+  resource_group_name = local.user_dns_zone_rg
+  ttl                 = 300
+  records             = sort(distinct(flatten([
+    for pe in values(azurerm_private_endpoint.servicebus_private_endpoint) : try(flatten([
+      for cfg in pe.custom_dns_configs : cfg.ip_addresses
+    ]), [])
+  ])))
+  depends_on = [
+    azurerm_private_endpoint.servicebus_private_endpoint
   ]
 }
 

@@ -14,12 +14,19 @@ locals {
   # Public network access - Service endpoints, Public endpoints
   public_network_access = local.is_service || local.is_public ? true : false
 
+  # Determine whether to create the private DNS zone (no ID provided)
+  create_private_dns_zone = local.is_private && (var.private_dns_zone_id == null || trimspace(var.private_dns_zone_id) == "")
 
-  # Create private DNS zone if not provided - Private endpoint
+  # User-provided private DNS zone (parsed components)
+  user_dns_zone_id   = !local.create_private_dns_zone && var.private_dns_zone_id != null && trimspace(var.private_dns_zone_id) != "" ? var.private_dns_zone_id : null
+  user_dns_zone_rg   = local.user_dns_zone_id != null ? element(split("/", local.user_dns_zone_id), 4) : null
+  user_dns_zone_name = local.user_dns_zone_id != null ? element(split("/", local.user_dns_zone_id), 8) : null
+
+  # Effective private DNS zone IDs (list) for PE attachment
   private_dns_zone_ids = local.is_private ? (
-    length(var.private_dns_zone_ids) > 0 ? var.private_dns_zone_ids : [
-      azurerm_private_dns_zone.private_dns_servicebus[0].id
-    ]
+    local.create_private_dns_zone
+    ? [azurerm_private_dns_zone.private_dns_servicebus[0].id]
+    : (local.user_dns_zone_id != null ? [local.user_dns_zone_id] : [])
   ) : []
 
   # Network rulesets - Service endpoints
@@ -39,7 +46,5 @@ locals {
     }
   ]
 
-  network_rules = [
-  ]
 }
 

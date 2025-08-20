@@ -13,10 +13,10 @@ variable "subnet_ids" {
   default     = []
 }
 
-variable "private_dns_zone_ids" {
+variable "private_dns_zone_id" {
   description = "The resource ID of the private DNS zone"
-  type        = list(string)
-  default     = []
+  type        = string
+  default     = null
 }
 
 variable "network_mode" {
