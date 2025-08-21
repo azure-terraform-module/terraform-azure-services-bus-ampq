@@ -22,6 +22,8 @@ locals {
   user_dns_zone_rg   = local.user_dns_zone_id != null ? element(split("/", local.user_dns_zone_id), 4) : null
   user_dns_zone_name = local.user_dns_zone_id != null ? element(split("/", local.user_dns_zone_id), 8) : null
 
+
+
   # Effective private DNS zone IDs (list) for PE attachment
   private_dns_zone_ids = local.is_private ? (
     local.create_private_dns_zone
