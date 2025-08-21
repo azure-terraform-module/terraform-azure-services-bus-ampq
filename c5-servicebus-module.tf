@@ -67,11 +67,12 @@ resource "azurerm_private_dns_a_record" "servicebus_private_dns_record" {
   zone_name           = azurerm_private_dns_zone.private_dns_servicebus[0].name
   resource_group_name = azurerm_private_dns_zone.private_dns_servicebus[0].resource_group_name
   ttl                 = 300
-  records             = sort(distinct(flatten([
-    for pe in values(azurerm_private_endpoint.servicebus_private_endpoint) : try(flatten([
-      for cfg in pe.custom_dns_configs : cfg.ip_addresses
-    ]), [])
+
+  records = sort(distinct(flatten([
+    for pe in azurerm_private_endpoint.servicebus_private_endpoint[*] :
+      try(flatten([for cfg in pe.custom_dns_configs : cfg.ip_addresses]), [])
   ])))
+
   depends_on = [
     azurerm_private_endpoint.servicebus_private_endpoint
   ]
