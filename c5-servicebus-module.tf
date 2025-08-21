@@ -80,7 +80,7 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
     for_each = var.sku == "Premium" ? [local.network_rulesets] : []
     content {
       default_action                = network_rule_set.value.default_action
-      # public_network_access_enabled = network_rule_set.value.public_network_access_enabled
+      public_network_access_enabled = network_rule_set.value.public_network_access_enabled
       dynamic "network_rules" {
         for_each = var.subnet_ids
         content {
