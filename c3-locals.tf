@@ -30,21 +30,10 @@ locals {
   ) : []
 
   # Network rulesets - Service endpoints
-  network_rulesets = [
-    {
+  network_rulesets = {
       default_action                 = local.is_public ? "Allow" : "Deny" # If use public endpoint, must allow all traffic
       trusted_services_allowed = true
       public_network_access_enabled  = local.public_network_access
-
-      # Vnet rules - Service endpoints
-      virtual_network_rule = local.is_service ? [
-        for subnet_id in var.subnet_ids : {
-          subnet_id                                       = subnet_id
-          ignore_missing_virtual_network_service_endpoint = true
-        }
-      ] : []
-    }
-  ]
-
+  }
 }
 

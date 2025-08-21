@@ -111,16 +111,16 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   local_auth_enabled         = var.local_auth_enabled
 
   dynamic "network_rule_set" {
-    for_each = var.sku == "Premium" ? local.network_rulesets : []
+    for_each = var.sku == "Premium" ? [1] : []
     content {
-      default_action                = network_rule_set.value.default_action
+      default_action                = local.network_rulesets.default_action
+      public_network_access_enabled = local.network_rulesets.public_network_access_enabled
       # public_network_access_enabled = network_rule_set.value.public_network_access_enabled
-      trusted_services_allowed = network_rule_set.value.trusted_services_allowed
       dynamic "network_rules" {
-        for_each = local.is_service ? toset(var.subnet_ids) : toset([])
+        for_each = var.subnet_ids
         content {
-          subnet_id                            = network_rules.value.subnet_id
-          ignore_missing_vnet_service_endpoint = network_rules.value.ignore_missing_virtual_network_service_endpoint
+          subnet_id                            = network_rules.value
+          ignore_missing_vnet_service_endpoint = false # Error when not yet 
         }
       }
     }
