@@ -8,91 +8,62 @@ resource "azurerm_private_dns_zone" "private_dns_servicebus" {
 
 # Case 1: User not providing a private DNS zone ID, create a new one and link it to VNets - Private endpoint
 resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns_zone_link" {
-  count = local.create_private_dns_zone ? length(var.vnet_ids) : 0
+  for_each = local.create_private_dns_zone ? toset(var.vnet_ids) : toset([])
 
-  name                  = "${var.namespace}-dns-link-${basename(var.vnet_ids[count.index])}"
+  name                  = "${var.namespace}-dns-link-${basename(each.key)}"
   private_dns_zone_name = azurerm_private_dns_zone.private_dns_servicebus[0].name
   resource_group_name   = azurerm_private_dns_zone.private_dns_servicebus[0].resource_group_name
-  virtual_network_id    = var.vnet_ids[count.index]
+  virtual_network_id    = each.value
   tags                  = var.tags
 
   depends_on = [
     azurerm_private_dns_zone.private_dns_servicebus
   ]
 }
-#####
 
 # Case 2: User providing a private DNS zone ID, create a link to VNets - Private endpoint
 resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns_zone_user_link" {
-  count = (!local.create_private_dns_zone && local.user_dns_zone_id != null) ? length(var.vnet_ids) : 0
+  for_each = !local.create_private_dns_zone && local.user_dns_zone_id != null ? toset(var.vnet_ids) : toset([])
 
-  name                  = "${var.namespace}-dns-link-${basename(var.vnet_ids[count.index])}"
+  name                  = "${var.namespace}-dns-link-${basename(each.key)}"
   private_dns_zone_name = local.user_dns_zone_name
   resource_group_name   = local.user_dns_zone_rg
-  virtual_network_id    = var.vnet_ids[count.index]
+  virtual_network_id    = each.value
   tags                  = var.tags
 }
 
-#####
+
 
 # Create private endpoint - Private endpoint
 resource "azurerm_private_endpoint" "servicebus_private_endpoint" {
-  count = local.is_private ? length(var.subnet_ids) : 0
-
-  name                = "${var.namespace}-private-endpoint-${local.subnet_info[var.subnet_ids[count.index]].name}"
+  for_each = (local.is_private
+    ? toset(var.subnet_ids)
+    : toset([])
+  )
+  name                = "${var.namespace}-private-endpoint-${local.subnet_info[each.key].name}"
   location            = var.location
   resource_group_name = var.resource_group_name
-  subnet_id           = var.subnet_ids[count.index]
+  subnet_id           = each.key
 
   private_service_connection {
-    name                           = "${var.namespace}-private-connection-${local.subnet_info[var.subnet_ids[count.index]].name}"
+    name                           = "${var.namespace}-private-connection-${local.subnet_info[each.key].name}"
     private_connection_resource_id = azurerm_servicebus_namespace.servicebus_namespace.id
     is_manual_connection           = false
     subresource_names              = ["namespace"]
   }
 
-  tags = var.tags
+  dynamic "private_dns_zone_group" {
+    for_each = length(local.private_dns_zone_ids) > 0 ? [1] : []
+    content {
+      name                 = "default"
+      private_dns_zone_ids = local.private_dns_zone_ids
+    }
+  }
 
+  tags = var.tags
   depends_on = [
     azurerm_private_dns_zone.private_dns_servicebus,
     azurerm_private_dns_zone_virtual_network_link.servicebus_private_dns_zone_link
-  ]
-}
-
-
-# Manual Private DNS A record aggregating all Private Endpoint IPs (module-created zone)
-resource "azurerm_private_dns_a_record" "servicebus_private_dns_record" {
-  count               = local.create_private_dns_zone && length(azurerm_private_endpoint.servicebus_private_endpoint) > 0 ? 1 : 0
-  name                = var.namespace
-  zone_name           = azurerm_private_dns_zone.private_dns_servicebus[0].name
-  resource_group_name = azurerm_private_dns_zone.private_dns_servicebus[0].resource_group_name
-  ttl                 = 300
-
-  records = sort(distinct(flatten([
-    for pe in azurerm_private_endpoint.servicebus_private_endpoint[*] :
-      try(flatten([for cfg in pe.custom_dns_configs : cfg.ip_addresses]), [])
-  ])))
-
-  depends_on = [
-    azurerm_private_endpoint.servicebus_private_endpoint
-  ]
-}
-
-# Manual Private DNS A record aggregating all Private Endpoint IPs (user-provided zone)
-resource "azurerm_private_dns_a_record" "servicebus_private_dns_record_user" {
-  count               = !local.create_private_dns_zone && local.user_dns_zone_id != null && length(azurerm_private_endpoint.servicebus_private_endpoint) > 0 ? 1 : 0
-  name                = var.namespace
-  zone_name           = local.user_dns_zone_name
-  resource_group_name = local.user_dns_zone_rg
-  ttl                 = 300
-
-  records = sort(distinct(flatten([
-    for pe in azurerm_private_endpoint.servicebus_private_endpoint[*] :
-      try(flatten([for cfg in pe.custom_dns_configs : cfg.ip_addresses]), [])
-  ])))
-
-  depends_on = [
-    azurerm_private_endpoint.servicebus_private_endpoint
   ]
 }
 
@@ -111,16 +82,15 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   local_auth_enabled         = var.local_auth_enabled
 
   dynamic "network_rule_set" {
-    for_each = var.sku == "Premium" ? [1] : []
+    for_each = var.sku == "Premium" ? [local.network_rulesets] : []
     content {
-      default_action                = local.network_rulesets.default_action
-      public_network_access_enabled = local.network_rulesets.public_network_access_enabled
-      # public_network_access_enabled = network_rule_set.value.public_network_access_enabled
+      default_action                = network_rule_set.value.default_action
+      public_network_access_enabled = network_rule_set.value.public_network_access_enabled
       dynamic "network_rules" {
         for_each = var.subnet_ids
         content {
           subnet_id                            = network_rules.value
-          ignore_missing_vnet_service_endpoint = false # Error when not yet 
+          ignore_missing_vnet_service_endpoint = false
         }
       }
     }
@@ -130,13 +100,6 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
   identity {
     type         = var.customer_managed_key == null ? "SystemAssigned" : "UserAssigned"
     identity_ids = var.customer_managed_key == null ? null : [var.customer_managed_key.user_assigned_identity_id]
-  }
-
-  lifecycle {
-    precondition {
-      condition     = var.customer_managed_key == null || try(var.customer_managed_key.user_assigned_identity_id, null) != null
-      error_message = "customer_managed_key requires user_assigned_identity_id for Key Vault access."
-    }
   }
 
   dynamic "customer_managed_key" {
