@@ -8,12 +8,12 @@ resource "azurerm_private_dns_zone" "private_dns_servicebus" {
 
 # Case 1: User not providing a private DNS zone ID, create a new one and link it to VNets - Private endpoint
 resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns_zone_link" {
-  for_each = local.create_private_dns_zone ? toset(var.vnet_ids) : toset([])
+  count = local.create_private_dns_zone ? length(var.vnet_ids) : 0
 
-  name                  = "${var.namespace}-dns-link-${basename(each.key)}"
+  name                  = "${var.namespace}-dns-link-${basename(var.vnet_ids[count.index])}"
   private_dns_zone_name = azurerm_private_dns_zone.private_dns_servicebus[0].name
   resource_group_name   = azurerm_private_dns_zone.private_dns_servicebus[0].resource_group_name
-  virtual_network_id    = each.value
+  virtual_network_id    = var.vnet_ids[count.index]
   tags                  = var.tags
 
   depends_on = [
@@ -23,30 +23,25 @@ resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns
 
 # Case 2: User providing a private DNS zone ID, create a link to VNets - Private endpoint
 resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns_zone_user_link" {
-  for_each = !local.create_private_dns_zone && local.user_dns_zone_id != null ? toset(var.vnet_ids) : toset([])
+  count = !local.create_private_dns_zone && local.user_dns_zone_id != null ? length(var.vnet_ids) : 0
 
-  name                  = "${var.namespace}-dns-link-${basename(each.key)}"
+  name                  = "${var.namespace}-dns-link-${basename(var.vnet_ids[count.index])}"
   private_dns_zone_name = local.user_dns_zone_name
   resource_group_name   = local.user_dns_zone_rg
-  virtual_network_id    = each.value
+  virtual_network_id    = var.vnet_ids[count.index]
   tags                  = var.tags
 }
 
-
-
 # Create private endpoint - Private endpoint
 resource "azurerm_private_endpoint" "servicebus_private_endpoint" {
-  for_each = (local.is_private
-    ? toset(var.subnet_ids)
-    : toset([])
-  )
-  name                = "${var.namespace}-private-endpoint-${local.subnet_info[each.key].name}"
+  count = local.is_private ? length(var.subnet_ids) : 0
+  name                = "${var.namespace}-private-endpoint-${local.subnet_info[var.subnet_ids[count.index]].name}"
   location            = var.location
   resource_group_name = var.resource_group_name
-  subnet_id           = each.key
+  subnet_id           = var.subnet_ids[count.index]
 
   private_service_connection {
-    name                           = "${var.namespace}-private-connection-${local.subnet_info[each.key].name}"
+    name                           = "${var.namespace}-private-connection-${local.subnet_info[var.subnet_ids[count.index]].name}"
     private_connection_resource_id = azurerm_servicebus_namespace.servicebus_namespace.id
     is_manual_connection           = false
     subresource_names              = ["namespace"]
