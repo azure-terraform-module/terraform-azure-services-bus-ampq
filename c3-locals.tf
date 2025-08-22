@@ -48,8 +48,12 @@ locals {
     if !startswith(link.name, "${var.namespace}-tf-managed-vnet-link")
   ] : []
   
-  # Find VNets that need links (VNets provided but don't have existing NON-TERRAFORM-MANAGED links)
-  vnets_needing_links = [
+  # For count calculation: use all provided VNets (stable during plan)
+  # The actual conflict detection happens at apply time through Azure API
+  vnets_needing_links = var.vnet_ids
+  
+  # Smart filtering happens at apply time through the vnet_links data
+  vnets_needing_links_filtered = [
     for vnet_id in var.vnet_ids : vnet_id if !contains(local.vnets_with_existing_links, vnet_id)
   ]
 
