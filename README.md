@@ -2,7 +2,7 @@
 
 This Terraform module provisions an **Azure Service Bus** namespace and its associated resources with support for **private**, **service**, and **public** network modes.
 
-## 1. features
+## 1. Features
 - Support for **private**, **service**, and **public** access modes.
 - **Intelligent private DNS zone management**: automatically discovers existing `privatelink.servicebus.windows.net` zone or creates new one.
 - **Smart VNet link detection**: discovers existing VNet links and only creates missing ones to prevent conflicts.
@@ -97,16 +97,16 @@ output "vnet_links_info" {
 }
 ```
 
-### 2.5. examples
+### 2.5. Examples
 
-#### Variable requirement by `network_mode`
+#### Variable requirements by `network_mode`
 | `network_mode`       | `subnet_ids`              | `vnet_ids` | 
 | -------------------- | ------------------------- | ---------- | 
 | **private endpoint** | ✅ (at least 1)           | ✅         |
 | **service endpoint** | ✅                        | ❌         |
 | **public endpoint**  | ❌                        | ❌         | 
 
-##### Notes:
+#### Notes:
 - ✅ = **required**
 - ❌ = **not required**
 
