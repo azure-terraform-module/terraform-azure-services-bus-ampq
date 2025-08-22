@@ -39,7 +39,7 @@ specify how the service bus should be exposed:
 | `namespace`                       | `string`        | ✅        | —        | The name of the Service Bus namespace.                                                       |
 | `resource_group_name`             | `string`        | ✅        | —        | Resource group where resources will be created.                                              |
 | `location`                        | `string`        | ✅        | —        | Azure location where resources will be created.                                              |
-| `subscription_id`                 | `string`        | ✅        | —        | The Azure subscription ID.                                                                   |
+| `subscription_id`                 | `string`        | ✅        | —        | The Azure subscription ID (used to construct Azure resource IDs for azapi data sources).     |
 | `queues`                          | `list(object({ name = string, partitioning_enabled = optional(bool), requires_duplicate_detection = optional(bool) }))` | ❌ | `[]` | Queues to create. Defaults: `partitioning_enabled = false`, `requires_duplicate_detection = false`. In Premium, `partitioning_enabled` must be false (enforced). |
 | `topics`                          | `list(object({ name = string, partitioning_enabled = optional(bool), requires_duplicate_detection = optional(bool) }))` | ❌ | `[]` | Topics to create. Defaults: `partitioning_enabled = false`, `requires_duplicate_detection = false`. In Premium, `partitioning_enabled` must be false (enforced). |
 | `sku`                             | `string`        | ❌        | `"Premium"` | The SKU of the Service Bus namespace.                                                        |
@@ -126,6 +126,7 @@ module "servicebus" {
   namespace            = "my-svcbus-private-mode" # must be unique name
   resource_group_name  = "my-rg"
   location             = "eastus"
+  subscription_id      = "<your-subscription-id>" # required by azapi data sources
   network_mode         = "private"
 
   subnet_ids = [
@@ -162,6 +163,7 @@ module "servicebus" {
   namespace            = "my-svcbus-service-mode"
   resource_group_name  = "my-rg"
   location             = "eastus"
+  subscription_id      = "<your-subscription-id>"
   network_mode         = "service"
   sku                  = "Premium"
 
@@ -201,6 +203,7 @@ module "servicebus" {
   namespace            = "my-svcbus-public-mode"
   resource_group_name  = "my-rg"
   location             = "eastus"
+  subscription_id      = "<your-subscription-id>"
   network_mode         = "public"
   sku                  = "Standard"
 
@@ -294,12 +297,12 @@ output "private_dns_zone_id" {
   value       = module.servicebus.private_dns_zone_id
 }
 
-output "vnet_links_info" {
+output "private_dns_zone_vnet_links_info" {
   description = "Information about VNet links management"
   value       = module.servicebus.private_dns_zone_vnet_links_info
 }
 
-output "debug_info" {
+output "debug_locals" {
   description = "Debug information for troubleshooting"
   value       = module.servicebus.debug_locals
 }
