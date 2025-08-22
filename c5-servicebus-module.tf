@@ -85,9 +85,7 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
 
   identity {
     type         = var.customer_managed_key == null ? "SystemAssigned" : "UserAssigned"
-    identity_ids = var.customer_managed_key == null || try(var.customer_managed_key.user_assigned_identity_id, null) == null
-      ? null
-      : [var.customer_managed_key.user_assigned_identity_id]
+    identity_ids = var.customer_managed_key == null || try(var.customer_managed_key.user_assigned_identity_id, null) == null ? null : [var.customer_managed_key.user_assigned_identity_id]
   }
 
   lifecycle {
