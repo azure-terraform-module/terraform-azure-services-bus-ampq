@@ -11,9 +11,9 @@ This Terraform module provisions an **Azure Service Bus** namespace and its asso
 - System-assigned managed identity on the namespace.
 - Supports tagging, resource grouping, and subnet customization.
 
-## 2. module usage
+## 2. Module usage
 
-### 2.1. prerequisites
+### 2.1. Prerequisites
 Ensure that you have the following:
 - Terraform `>= 1.5`
 - azurerm provider `~> 4.25.0`
@@ -32,7 +32,7 @@ specify how the service bus should be exposed:
   
 	![alt text](https://raw.githubusercontent.com/azure-terraform-module/terraform-azure-services-bus-ampq/refs/heads/release/0.0.1/images/03.png)
 
-### 2.3. input variables
+### 2.3. Input variables
 
 | name                              | type            | required | default  | description                                                                                  |
 | --------------------------------- | --------------- | -------- | -------- | -------------------------------------------------------------------------------------------- |
@@ -63,7 +63,7 @@ specify how the service bus should be exposed:
 
 - `network_mode = "service"` applies network rules only when `sku = "Premium"`. With non-Premium SKUs, network rules are not applied by this module; consider `public` or use `private` endpoints instead.
 
-### 2.4. intelligent private DNS zone management
+### 2.4. Intelligent private DNS zone management
 
 When using `network_mode = "private"`, the module intelligently manages private DNS zones and VNet links:
 
