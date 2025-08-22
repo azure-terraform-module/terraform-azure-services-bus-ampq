@@ -11,10 +11,10 @@ resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_servicebus
   count = local.is_private ? length(local.vnets_needing_links) : 0
   
   name                  = "${var.namespace}-tf-managed-vnet-link-${count.index}"
-  resource_group_name   = var.resource_group_name
+  resource_group_name   = try(data.azurerm_private_dns_zone.private_dns_zone.resource_group_name, var.resource_group_name)
   private_dns_zone_name = try(data.azurerm_private_dns_zone.private_dns_zone.name, local.private_dns_zone_name)
   virtual_network_id    = local.vnets_needing_links[count.index]
-  registration_enabled  = true
+  registration_enabled  = false
   
   depends_on = [azurerm_private_dns_zone.private_dns_servicebus]
 }
@@ -35,10 +35,18 @@ resource "azurerm_private_endpoint" "servicebus_private_endpoint" {
   }
 
   dynamic "private_dns_zone_group" {
-    for_each = try(data.azurerm_private_dns_zone.private_dns_zone.id, azurerm_private_dns_zone.private_dns_servicebus[0].id, null) != null ? [1] : []
+    for_each = try(
+      try(data.azurerm_private_dns_zone.private_dns_zone.id, null) != null ||
+      length(azurerm_private_dns_zone.private_dns_servicebus) > 0
+    ) ? [1] : []
     content {
       name                 = "default"
-      private_dns_zone_ids = [try(data.azurerm_private_dns_zone.private_dns_zone.id, azurerm_private_dns_zone.private_dns_servicebus[0].id)]
+      private_dns_zone_ids = [
+        try(
+          data.azurerm_private_dns_zone.private_dns_zone.id,
+          azurerm_private_dns_zone.private_dns_servicebus[0].id
+        )
+      ]
     }
   }
 
@@ -77,7 +85,16 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
 
   identity {
     type         = var.customer_managed_key == null ? "SystemAssigned" : "UserAssigned"
-    identity_ids = var.customer_managed_key == null ? null : [var.customer_managed_key.user_assigned_identity_id]
+    identity_ids = var.customer_managed_key == null || try(var.customer_managed_key.user_assigned_identity_id, null) == null
+      ? null
+      : [var.customer_managed_key.user_assigned_identity_id]
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.customer_managed_key == null || try(var.customer_managed_key.user_assigned_identity_id, null) != null
+      error_message = "customer_managed_key requires user_assigned_identity_id for Key Vault access."
+    }
   }
 
   dynamic "customer_managed_key" {

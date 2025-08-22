@@ -35,7 +35,7 @@ output "topics" {
 
 output "private_dns_zone_id" {
   description = "The Private DNS Zone ID used for the private endpoint (existing or created)."
-  value       = try(data.azurerm_private_dns_zone.private_dns_zone.id, azurerm_private_dns_zone.private_dns_servicebus[0].id, null)
+  value       = try(data.azurerm_private_dns_zone.private_dns_zone[0].id, azurerm_private_dns_zone.private_dns_servicebus[0].id, null)
 }
 
 output "private_dns_zone_vnet_links_info" {
@@ -53,13 +53,13 @@ output "all_dns_zone_vnet_links" {
 }
 
 # Temporary output to debug local values
-# output "debug_locals" {
-#   description = "Debug information for local values."
-#   value = {
-#     create_private_dns_zone = local.create_private_dns_zone
-#     is_private              = local.is_private
-#     dns_zone_exists        = try(data.azurerm_private_dns_zone.private_dns_zone.id, null) != null
-#     vnets_needing_links_count = length(local.vnets_needing_links)
-#     vnets_with_links_count    = length(local.vnets_with_existing_links)
-#   }
-# }
+output "debug_locals" {
+  description = "Debug information for local values."
+  value = {
+    create_private_dns_zone = local.create_private_dns_zone
+    is_private              = local.is_private
+    dns_zone_exists        = try(data.azurerm_private_dns_zone.private_dns_zone.id, null) != null
+    vnets_needing_links_count = length(local.vnets_needing_links)
+    vnets_with_links_count    = length(local.vnets_with_existing_links)
+  }
+}
