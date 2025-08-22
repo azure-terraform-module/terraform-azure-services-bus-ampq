@@ -1,22 +1,24 @@
-# terraform-azurerm-servicebus
+# Terraform-azurerm-servicebus
 
-this terraform module provisions an **azure service bus** namespace and its associated resources with support for **private**, **service**, and **public** network modes.
+This Terraform module provisions an **Azure Service Bus** namespace and its associated resources with support for **private**, **service**, and **public** network modes.
 
 ## 1. features
-- support for **private**, **service**, and **public** access modes.
-- automatic provisioning of **private dns zones** and **virtual network links** if not provided.
-- configurable **ip rules** and **vnet rules** for service endpoint mode (applies when `sku = "Premium"`).
-- optional creation of **queues** and **topics** inside the namespace.
-- system-assigned managed identity on the namespace.
-- supports tagging, resource grouping, and subnet customization.
+- Support for **private**, **service**, and **public** access modes.
+- **Intelligent private DNS zone management**: automatically discovers existing `privatelink.servicebus.windows.net` zone or creates new one.
+- **Smart VNet link detection**: discovers existing VNet links and only creates missing ones to prevent conflicts.
+- Configurable **IP rules** and **VNet rules** for service endpoint mode (applies when `sku = "Premium"`).
+- Optional creation of **queues** and **topics** inside the namespace.
+- System-assigned managed identity on the namespace.
+- Supports tagging, resource grouping, and subnet customization.
 
 ## 2. module usage
 
 ### 2.1. prerequisites
-ensure that you have the following:
-- terraform `>= 1.3`
+Ensure that you have the following:
+- Terraform `>= 1.5`
 - azurerm provider `~> 4.25.0`
-- proper permissions in your azure subscription to create service bus, dns zones, vnets, and private endpoints.
+- azapi provider `>= 1.0.0`
+- Proper permissions in your Azure subscription to create Service Bus, DNS zones, VNets, and private endpoints.
 
 ### 2.2. `network_mode`
 specify how the service bus should be exposed:
@@ -34,23 +36,23 @@ specify how the service bus should be exposed:
 
 | name                              | type            | required | default  | description                                                                                  |
 | --------------------------------- | --------------- | -------- | -------- | -------------------------------------------------------------------------------------------- |
-| `namespace`                       | `string`        | ✅        | —        | the name of the service bus namespace.                                                       |
-| `queues`                          | `list(object({ name = string, partitioning_enabled = optional(bool), requires_duplicate_detection = optional(bool) }))` | ❌ | `[]` | queues to create. defaults: `partitioning_enabled = false`, `requires_duplicate_detection = false`. in Premium, `partitioning_enabled` must be false (enforced). |
-| `topics`                          | `list(object({ name = string, partitioning_enabled = optional(bool), requires_duplicate_detection = optional(bool) }))` | ❌ | `[]` | topics to create. defaults: `partitioning_enabled = false`, `requires_duplicate_detection = false`. in Premium, `partitioning_enabled` must be false (enforced). |
-| `sku`                             | `string`        | ❌        | `"Premium"` | the sku of the service bus namespace.                                                        |
-| `capacity`                        | `number`        | ❌        | `1`      | capacity (messaging units). used only when `sku = "Premium"`; ignored otherwise.             |
-| `premium_messaging_partitions`    | `number`        | ❌        | `1`      | premium namespace partition count. used only when `sku = "Premium"`; ignored otherwise.      |
-| `network_mode`                    | `string`        | ❌        | `public` | network mode: `private`, `service`, `public`.                                                |
-| `servicebus_private_dns_zone_ids` | `list(string)`  | ❌        | `[]`     | resource ids of private dns zones for service bus (used in private endpoint mode).           |
-| `subnet_ids`                      | `list(string)`  | ❌        | `[]`     | subnet ids used for private endpoints or service endpoints (see network mode behavior).      |
-| `vnet_ids`                        | `list(string)`  | ❌        | `[]`     | vnet ids used for linking to private dns zone (only for private endpoints).                  |
-| `local_auth_enabled`              | `bool`          | ❌        | `false`  | whether to enable local (SAS) auth. set to `false` to enforce Entra ID only.                 |
-| `customer_managed_key`            | `object({ key_vault_key_id = string, user_assigned_identity_id = optional(string) })` | ❌ | `null` | cmk for encryption at rest (Premium only). requires a managed identity with key vault access. |
-| `resource_group_name`             | `string`        | ✅        | —        | resource group where resources will be created.                                              |
-| `location`                        | `string`        | ✅        | —        | azure location where resources will be created.                                              |
-| `tags`                            | `map(string)`   | ❌        | `{}`     | tags to assign to the resources.                                                             |
+| `namespace`                       | `string`        | ✅        | —        | The name of the Service Bus namespace.                                                       |
+| `resource_group_name`             | `string`        | ✅        | —        | Resource group where resources will be created.                                              |
+| `location`                        | `string`        | ✅        | —        | Azure location where resources will be created.                                              |
+| `subscription_id`                 | `string`        | ✅        | —        | The Azure subscription ID.                                                                   |
+| `queues`                          | `list(object({ name = string, partitioning_enabled = optional(bool), requires_duplicate_detection = optional(bool) }))` | ❌ | `[]` | Queues to create. Defaults: `partitioning_enabled = false`, `requires_duplicate_detection = false`. In Premium, `partitioning_enabled` must be false (enforced). |
+| `topics`                          | `list(object({ name = string, partitioning_enabled = optional(bool), requires_duplicate_detection = optional(bool) }))` | ❌ | `[]` | Topics to create. Defaults: `partitioning_enabled = false`, `requires_duplicate_detection = false`. In Premium, `partitioning_enabled` must be false (enforced). |
+| `sku`                             | `string`        | ❌        | `"Premium"` | The SKU of the Service Bus namespace.                                                        |
+| `capacity`                        | `number`        | ❌        | `1`      | Capacity (messaging units). Used only when `sku = "Premium"`; ignored otherwise.             |
+| `premium_messaging_partitions`    | `number`        | ❌        | `null`   | Premium namespace partition count. Used only when `sku = "Premium"`; ignored otherwise.      |
+| `network_mode`                    | `string`        | ❌        | `"public"` | Network mode: `private`, `service`, `public`.                                                |
+| `vnet_ids`                        | `list(string)`  | ❌        | `[]`     | VNet IDs used for linking to private DNS zone (only for private endpoints).                  |
+| `subnet_ids`                      | `list(string)`  | ❌        | `[]`     | Subnet IDs used for private endpoints or service endpoints (see network mode behavior).      |
+| `local_auth_enabled`              | `bool`          | ❌        | `false`  | Whether to enable local (SAS) auth. Set to `false` to enforce Entra ID only.                 |
+| `customer_managed_key`            | `object({ key_vault_key_id = string, user_assigned_identity_id = string })` | ❌ | `null` | CMK for encryption at rest (Premium only). Requires a managed identity with key vault access. |
+| `tags`                            | `map(string)`   | ❌        | `{}`     | Tags to assign to the resources.                                                             |
 
-#### Notes on `Premium` sku behavior
+#### Notes on `Premium` SKU behavior
 
 - When `sku = "Premium"`:
   - Namespace-level `capacity` and `premium_messaging_partitions` are used. If not set, they default to provider defaults.
@@ -59,26 +61,61 @@ specify how the service bus should be exposed:
 
 #### Notes on service mode
 
-- `network_mode = "service"` applies network rules only when `sku = "Premium"`. with non-Premium SKUs, network rules are not applied by this module; consider `public` or use `private` endpoints instead.
+- `network_mode = "service"` applies network rules only when `sku = "Premium"`. With non-Premium SKUs, network rules are not applied by this module; consider `public` or use `private` endpoints instead.
 
-### 2.4. example
+### 2.4. intelligent private DNS zone management
 
-### variable requirement by `network_mode`
-| `network_mode`       | `servicebus_private_dns_zone_ids` | `subnet_ids`              | `vnet_ids` | 
-| -------------------- | --------------------------------- | ------------------------- | ---------- | 
-| **private endpoint** | 🟦                                | ✅ (at least 1)           | ✅         |
-| **service endpoint** | ❌                                | ✅                        | ❌         |
-| **public endpoint**  | ❌                                | ❌                        | ❌         | 
+When using `network_mode = "private"`, the module intelligently manages private DNS zones and VNet links:
 
-##### notes:
+#### 🔍 **Discovery Logic**
+1. **Searches for existing DNS zone** named `privatelink.servicebus.windows.net` in the specified resource group
+2. **Discovers existing VNet links** for the DNS zone using Azure API (`azapi_resource_list`)
+3. **Identifies which VNets need new links** by comparing your `vnet_ids` with existing links
+
+#### 🎯 **Creation Logic**
+- **DNS zone**: Creates new zone only if none exists with the specified name
+- **VNet links**: Creates links only for VNets that don't already have them
+- **Naming**: Uses unique names like `{namespace}-tf-managed-vnet-link-0` to avoid conflicts
+
+#### ✅ **Benefits**
+- **No conflicts**: Prevents "VNet already linked" errors
+- **Multi-module safe**: Multiple Service Bus modules can safely use same DNS zone
+- **Idempotent**: Running multiple times won't cause issues
+- **Automatic discovery**: Finds existing infrastructure without manual input
+
+#### 📊 **Debug Outputs**
+The module provides debug outputs to help you understand what's happening:
+
+```hcl
+# See what the module discovered/created
+output "dns_debug" {
+  value = module.servicebus.debug_locals
+}
+
+output "vnet_links_info" {
+  value = module.servicebus.private_dns_zone_vnet_links_info
+}
+```
+
+### 2.5. examples
+
+#### Variable requirement by `network_mode`
+| `network_mode`       | `subnet_ids`              | `vnet_ids` | 
+| -------------------- | ------------------------- | ---------- | 
+| **private endpoint** | ✅ (at least 1)           | ✅         |
+| **service endpoint** | ✅                        | ❌         |
+| **public endpoint**  | ❌                        | ❌         | 
+
+##### Notes:
 - ✅ = **required**
 - ❌ = **not required**
-- 🟦 = **optional**
 
 #### main.tf
 
-network mode - private
-- when using private mode, variable `subnet_ids` is where the private endpoint ip will be created. you need at least one subnet id. if `servicebus_private_dns_zone_ids` are not provided, a private dns zone and vnet links will be created and associated.
+**Network mode - private**
+- When using private mode, variable `subnet_ids` is where the private endpoint IP will be created. You need at least one subnet ID.
+- The module automatically discovers existing `privatelink.servicebus.windows.net` DNS zone or creates a new one.
+- VNet links are intelligently managed: existing links are discovered and only missing ones are created to prevent conflicts.
 
 ```hcl
 module "servicebus" {
@@ -98,11 +135,6 @@ module "servicebus" {
     "/subscriptions/xxx/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet"
   ]
 
-  # optional variables
-  servicebus_private_dns_zone_ids = [
-    "/subscriptions/xxx/resourceGroups/my-rg/providers/Microsoft.Network/privateDnsZones/privatelink.servicebus.windows.net"
-  ]
-
   tags = {
     environment = "dev"
     project     = "servicebus-provisioning"
@@ -120,7 +152,7 @@ module "servicebus" {
 }
 ```
 
-network mode - service
+**Network mode - service**
 
 ```hcl
 module "servicebus" {
@@ -143,10 +175,8 @@ module "servicebus" {
     user_assigned_identity_id = "/subscriptions/xxx/resourceGroups/my-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/sb-kv-mi"
   }
 
-
   tags = {
     environment = "dev"
-    project     = "servicebus-provisioning"
   }
 
   queues = [
@@ -161,11 +191,13 @@ module "servicebus" {
 }
 ```
 
-network mode - public
+**Network mode - public**
+
 ```hcl
 module "servicebus" {
   source  = "<registry-or-repo-url>"
 
+  # required variables
   namespace            = "my-svcbus-public-mode"
   resource_group_name  = "my-rg"
   location             = "eastus"
@@ -180,13 +212,19 @@ module "servicebus" {
   }
 
   queues = [
-    { name = "queue1", partitioning_enabled = false, requires_duplicate_detection = true },
-    { name = "queue2", partitioning_enabled = false, requires_duplicate_detection = false }
+    { 
+      name = "test-queue",
+      requires_duplicate_detection = true
+      partitioning_enabled = true # Only for Standard SKU
+    }
   ]
 
-  topics = [
-    { name = "topic1", partitioning_enabled = false, requires_duplicate_detection = true },
-    { name = "topic2", partitioning_enabled = false, requires_duplicate_detection = false }
+  topics   = [
+    {
+      name = "test-topic",
+      requires_duplicate_detection = true
+      partitioning_enabled = true # Only for Standard SKU
+    }
   ]
 }
 ```
@@ -194,19 +232,16 @@ module "servicebus" {
 #### provider.tf
 ```hcl
 terraform {
-  required_version = ">= 1.9, < 2.0"
+  required_version = ">= 1.5, < 2.0"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "4.25.0"
+      version = "~> 4.25.0"
     }
-  }
-  backend "azurerm" {
-    resource_group_name  = "<your-resource-group-name>"
-    storage_account_name = "<your-storage-account-name>"
-    container_name       = "<your-container-name>"
-    key                  = "<your-key>"
-    subscription_id      = "<your-subscription-id>"
+    azapi = {
+      source  = "azure/azapi"
+      version = ">= 1.0.0"
+    }
   }
 }
 
@@ -219,37 +254,53 @@ provider "azurerm" {
 #### outputs.tf
 ```hcl
 output "namespace" {
-  description = "the name of the service bus namespace"
+  description = "The name of the Service Bus namespace"
   value       = module.servicebus.namespace
 }
 
 output "namespace_id" {
-  description = "the id of the service bus namespace"
+  description = "The ID of the Service Bus namespace"
   value       = module.servicebus.namespace_id
 }
 
 output "hostname" {
-  description = "the hostname of the service bus namespace"
+  description = "The hostname of the Service Bus namespace"
   value       = module.servicebus.hostname
 }
  
 output "queue_names" {
-  description = "names of service bus queues created"
+  description = "Names of Service Bus queues created"
   value       = module.servicebus.queue_names
 }
  
 output "queues" {
-  description = "map of queue name to queue id"
+  description = "Map of queue name to queue ID"
   value       = module.servicebus.queues
 }
  
 output "topic_names" {
-  description = "names of service bus topics created"
+  description = "Names of Service Bus topics created"
   value       = module.servicebus.topic_names
 }
  
 output "topics" {
-  description = "map of topic name to topic id"
+  description = "Map of topic name to topic ID"
   value       = module.servicebus.topics
+}
+
+# DNS zone management outputs
+output "private_dns_zone_id" {
+  description = "The Private DNS Zone ID used (existing or created)"
+  value       = module.servicebus.private_dns_zone_id
+}
+
+output "vnet_links_info" {
+  description = "Information about VNet links management"
+  value       = module.servicebus.private_dns_zone_vnet_links_info
+}
+
+output "debug_info" {
+  description = "Debug information for troubleshooting"
+  value       = module.servicebus.debug_locals
 }
 ```

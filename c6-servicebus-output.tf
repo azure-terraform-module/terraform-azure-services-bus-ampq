@@ -33,3 +33,33 @@ output "topics" {
   value       = { for name, t in azurerm_servicebus_topic.servicebus_topic : name => t.id }
 }
 
+output "private_dns_zone_id" {
+  description = "The Private DNS Zone ID used for the private endpoint (existing or created)."
+  value       = try(data.azurerm_private_dns_zone.private_dns_zone.id, azurerm_private_dns_zone.private_dns_servicebus[0].id, null)
+}
+
+output "private_dns_zone_vnet_links_info" {
+  description = "Information about VNet links for the Private DNS Zone."
+  value = {
+    vnets_with_existing_links = local.vnets_with_existing_links
+    vnets_needing_links      = local.vnets_needing_links
+    all_existing_links       = local.vnet_links
+  }
+}
+
+output "all_dns_zone_vnet_links" {
+  description = "All Virtual Network Links for the Private DNS Zone."
+  value = local.vnet_links
+}
+
+# Temporary output to debug local values
+# output "debug_locals" {
+#   description = "Debug information for local values."
+#   value = {
+#     create_private_dns_zone = local.create_private_dns_zone
+#     is_private              = local.is_private
+#     dns_zone_exists        = try(data.azurerm_private_dns_zone.private_dns_zone.id, null) != null
+#     vnets_needing_links_count = length(local.vnets_needing_links)
+#     vnets_with_links_count    = length(local.vnets_with_existing_links)
+#   }
+# }

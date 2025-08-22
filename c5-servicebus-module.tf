@@ -1,35 +1,22 @@
 # Create private DNS zone if not provided - Private endpoint
 resource "azurerm_private_dns_zone" "private_dns_servicebus" {
   count               = local.create_private_dns_zone ? 1 : 0
-  name                = "privatelink.servicebus.windows.net"
+  name                = local.private_dns_zone_name
   resource_group_name = var.resource_group_name
   tags                = var.tags
 }
 
-# Case 1: User not providing a private DNS zone ID, create a new one and link it to VNets - Private endpoint
-resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns_zone_link" {
-  count = local.create_private_dns_zone ? length(var.vnet_ids) : 0
-
-  name                  = "${var.namespace}-dns-link-${basename(var.vnet_ids[count.index])}"
-  private_dns_zone_name = azurerm_private_dns_zone.private_dns_servicebus[0].name
-  resource_group_name   = azurerm_private_dns_zone.private_dns_servicebus[0].resource_group_name
-  virtual_network_id    = var.vnet_ids[count.index]
-  tags                  = var.tags
-
-  depends_on = [
-    azurerm_private_dns_zone.private_dns_servicebus
-  ]
-}
-
-# Case 2: User providing a private DNS zone ID, create a link to VNets - Private endpoint
-resource "azurerm_private_dns_zone_virtual_network_link" "servicebus_private_dns_zone_user_link" {
-  count = !local.create_private_dns_zone && local.user_dns_zone_id != null ? length(var.vnet_ids) : 0
-
-  name                  = "${var.namespace}-dns-link-${basename(var.vnet_ids[count.index])}"
-  private_dns_zone_name = local.user_dns_zone_name
-  resource_group_name   = local.user_dns_zone_rg
-  virtual_network_id    = var.vnet_ids[count.index]
-  tags                  = var.tags
+# Create private DNS zone links for VNets that don't already have them
+resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_servicebus_link" {
+  count = local.is_private ? length(local.vnets_needing_links) : 0
+  
+  name                  = "${var.namespace}-tf-managed-vnet-link-${count.index}"
+  resource_group_name   = var.resource_group_name
+  private_dns_zone_name = try(data.azurerm_private_dns_zone.private_dns_zone.name, local.private_dns_zone_name)
+  virtual_network_id    = local.vnets_needing_links[count.index]
+  registration_enabled  = true
+  
+  depends_on = [azurerm_private_dns_zone.private_dns_servicebus]
 }
 
 # Create private endpoint - Private endpoint
@@ -48,18 +35,14 @@ resource "azurerm_private_endpoint" "servicebus_private_endpoint" {
   }
 
   dynamic "private_dns_zone_group" {
-    for_each = length(local.private_dns_zone_ids) > 0 ? [1] : []
+    for_each = try(data.azurerm_private_dns_zone.private_dns_zone.id, azurerm_private_dns_zone.private_dns_servicebus[0].id, null) != null ? [1] : []
     content {
       name                 = "default"
-      private_dns_zone_ids = local.private_dns_zone_ids
+      private_dns_zone_ids = [try(data.azurerm_private_dns_zone.private_dns_zone.id, azurerm_private_dns_zone.private_dns_servicebus[0].id)]
     }
   }
 
   tags = var.tags
-  depends_on = [
-    azurerm_private_dns_zone.private_dns_servicebus,
-    azurerm_private_dns_zone_virtual_network_link.servicebus_private_dns_zone_link
-  ]
 }
 
 # Service Bus Namespace

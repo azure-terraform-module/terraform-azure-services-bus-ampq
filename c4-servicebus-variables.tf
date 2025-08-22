@@ -13,12 +13,6 @@ variable "subnet_ids" {
   default     = []
 }
 
-variable "private_dns_zone_id" {
-  description = "The resource ID of the private DNS zone"
-  type        = string
-  default     = null
-}
-
 variable "network_mode" {
   description = "Network mode for Service bus private, service, public."
   type        = string
@@ -113,4 +107,3 @@ variable "customer_managed_key" {
     error_message = "customer_managed_key requires Premium SKU."
   }
 }
-
