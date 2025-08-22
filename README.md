@@ -119,8 +119,8 @@ output "vnet_links_info" {
 
 ```hcl
 module "servicebus" {
-  source  = "<registry-or-repo-url>"
-  # e.g., git::https://github.com/<org>/terraform-azure-services-bus-ampq.git?ref=v0.0.1
+  source  = "azure-terraform-module/services-bus-ampq/azure"
+  version = "0.0.1"
 
   # required variables
   namespace            = "my-svcbus-private-mode" # must be unique name
@@ -157,7 +157,8 @@ module "servicebus" {
 
 ```hcl
 module "servicebus" {
-  source  = "<registry-or-repo-url>"
+  source  = "azure-terraform-module/services-bus-ampq/azure"
+  version = "0.0.1"
 
   # required variables
   namespace            = "my-svcbus-service-mode"
@@ -197,7 +198,8 @@ module "servicebus" {
 
 ```hcl
 module "servicebus" {
-  source  = "<registry-or-repo-url>"
+  source  = "azure-terraform-module/services-bus-ampq/azure"
+  version = "0.0.1"
 
   # required variables
   namespace            = "my-svcbus-public-mode"
