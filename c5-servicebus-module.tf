@@ -1,4 +1,5 @@
-# Create private DNS zone if not provided - Private endpoint
+# Create or manage private DNS zone - Private endpoint
+# Count is always 1 when in private mode for stability
 resource "azurerm_private_dns_zone" "private_dns_servicebus" {
   count               = local.create_private_dns_zone ? 1 : 0
   name                = local.private_dns_zone_name
@@ -11,10 +12,10 @@ resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_servicebus
   count = local.is_private ? length(local.vnets_needing_links) : 0
   
   name                  = "${var.namespace}-tf-managed-vnet-link-${count.index}"
-  resource_group_name   = try(data.azurerm_private_dns_zone.private_dns_zone.resource_group_name, var.resource_group_name)
-  private_dns_zone_name = try(data.azurerm_private_dns_zone.private_dns_zone.name, local.private_dns_zone_name)
+  resource_group_name   = var.resource_group_name
+  private_dns_zone_name = local.effective_dns_zone_name
   virtual_network_id    = local.vnets_needing_links[count.index]
-  registration_enabled  = false
+  registration_enabled  = true
   
   depends_on = [azurerm_private_dns_zone.private_dns_servicebus]
 }
@@ -22,31 +23,23 @@ resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_servicebus
 # Create private endpoint - Private endpoint
 resource "azurerm_private_endpoint" "servicebus_private_endpoint" {
   count = local.is_private ? length(var.subnet_ids) : 0
-  name                = "${var.namespace}-private-endpoint-${basename(var.subnet_ids[count.index])}"
+  name                = "${var.namespace}-private-endpoint-${local.subnet_info[var.subnet_ids[count.index]].name}"
   location            = var.location
   resource_group_name = var.resource_group_name
   subnet_id           = var.subnet_ids[count.index]
 
   private_service_connection {
-    name                           = "${var.namespace}-private-connection-${basename(var.subnet_ids[count.index])}"
+    name                           = "${var.namespace}-private-connection-${local.subnet_info[var.subnet_ids[count.index]].name}"
     private_connection_resource_id = azurerm_servicebus_namespace.servicebus_namespace.id
     is_manual_connection           = false
     subresource_names              = ["namespace"]
   }
 
   dynamic "private_dns_zone_group" {
-    for_each = try(
-      try(data.azurerm_private_dns_zone.private_dns_zone.id, null) != null ||
-      length(azurerm_private_dns_zone.private_dns_servicebus) > 0
-    ) ? [1] : []
+    for_each = local.private_dns_zone_id != null ? [1] : []
     content {
       name                 = "default"
-      private_dns_zone_ids = [
-        try(
-          data.azurerm_private_dns_zone.private_dns_zone.id,
-          azurerm_private_dns_zone.private_dns_servicebus[0].id
-        )
-      ]
+      private_dns_zone_ids = [local.private_dns_zone_id]
     }
   }
 
@@ -85,14 +78,7 @@ resource "azurerm_servicebus_namespace" "servicebus_namespace" {
 
   identity {
     type         = var.customer_managed_key == null ? "SystemAssigned" : "UserAssigned"
-    identity_ids = var.customer_managed_key == null || try(var.customer_managed_key.user_assigned_identity_id, null) == null ? null : [var.customer_managed_key.user_assigned_identity_id]
-  }
-
-  lifecycle {
-    precondition {
-      condition     = var.customer_managed_key == null || try(var.customer_managed_key.user_assigned_identity_id, null) != null
-      error_message = "customer_managed_key requires user_assigned_identity_id for Key Vault access."
-    }
+    identity_ids = var.customer_managed_key == null ? null : [var.customer_managed_key.user_assigned_identity_id]
   }
 
   dynamic "customer_managed_key" {

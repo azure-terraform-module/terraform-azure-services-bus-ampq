@@ -9,9 +9,27 @@ locals {
   rg_name_lower = lower(var.resource_group_name)
 
   private_dns_zone_name = "privatelink.servicebus.windows.net"
+  
+  # Find our specific DNS zone from the list of all DNS zones
+  found_dns_zones = local.is_private && length(data.azapi_resource_list.all_private_dns_zones) > 0 ? [
+    for zone in data.azapi_resource_list.all_private_dns_zones[0].output.value : zone
+    if zone.name == local.private_dns_zone_name
+  ] : []
+  
+  # Get the effective DNS zone name (existing or default)
+  effective_dns_zone_name = length(local.found_dns_zones) > 0 ? local.found_dns_zones[0].name : local.private_dns_zone_name
 
-  # Create private DNS zone if not provided, and network mode is private and not exist in the resource group
-  create_private_dns_zone = var.network_mode == "private" && try(data.azurerm_private_dns_zone.private_dns_zone.id, null) == null
+  # Always manage DNS zone when in private mode (count = 1)
+  # If zone exists: Terraform will import it
+  # If zone doesn't exist: Terraform will create it
+  create_private_dns_zone = var.network_mode == "private"
+  
+  # Get the DNS zone ID (existing or created)
+  private_dns_zone_id = local.is_private ? (
+    length(local.found_dns_zones) > 0 ? 
+    local.found_dns_zones[0].id : 
+    try(azurerm_private_dns_zone.private_dns_servicebus[0].id, null)
+  ) : null
   
   # Extract VNet link info from the API response
   vnet_links = local.is_private && length(data.azapi_resource_list.dns_zone_links) > 0 ? [
