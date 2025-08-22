@@ -46,3 +46,4 @@ output "private_dns_zone_vnet_links_info" {
     all_existing_links       = local.vnet_links
   }
 }
+
