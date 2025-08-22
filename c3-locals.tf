@@ -19,10 +19,8 @@ locals {
   # Get the effective DNS zone name (existing or default)
   effective_dns_zone_name = length(local.found_dns_zones) > 0 ? local.found_dns_zones[0].name : local.private_dns_zone_name
 
-  # Always manage DNS zone when in private mode (count = 1)
-  # If zone exists: Terraform will import it
-  # If zone doesn't exist: Terraform will create it
-  create_private_dns_zone = var.network_mode == "private"
+  # Only create DNS zone if it doesn't exist and we're in private mode
+  create_private_dns_zone = var.network_mode == "private" && length(local.found_dns_zones) == 0
   
   # Get the DNS zone ID (existing or created)
   private_dns_zone_id = local.is_private ? (
