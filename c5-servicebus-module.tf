@@ -22,13 +22,13 @@ resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_servicebus
 # Create private endpoint - Private endpoint
 resource "azurerm_private_endpoint" "servicebus_private_endpoint" {
   count = local.is_private ? length(var.subnet_ids) : 0
-  name                = "${var.namespace}-private-endpoint-${local.subnet_info[var.subnet_ids[count.index]].name}"
+  name                = "${var.namespace}-private-endpoint-${basename(var.subnet_ids[count.index])}"
   location            = var.location
   resource_group_name = var.resource_group_name
   subnet_id           = var.subnet_ids[count.index]
 
   private_service_connection {
-    name                           = "${var.namespace}-private-connection-${local.subnet_info[var.subnet_ids[count.index]].name}"
+    name                           = "${var.namespace}-private-connection-${basename(var.subnet_ids[count.index])}"
     private_connection_resource_id = azurerm_servicebus_namespace.servicebus_namespace.id
     is_manual_connection           = false
     subresource_names              = ["namespace"]
