@@ -39,7 +39,6 @@ specify how the service bus should be exposed:
 | `namespace`                       | `string`        | ✅        | —        | The name of the Service Bus namespace.                                                       |
 | `resource_group_name`             | `string`        | ✅        | —        | Resource group where resources will be created.                                              |
 | `location`                        | `string`        | ✅        | —        | Azure location where resources will be created.                                              |
-| `subscription_id`                 | `string`        | ✅        | —        | The Azure subscription ID (used to construct Azure resource IDs for azapi data sources).     |
 | `queues`                          | `list(object({ name = string, partitioning_enabled = optional(bool), requires_duplicate_detection = optional(bool) }))` | ❌ | `[]` | Queues to create. Defaults: `partitioning_enabled = false`, `requires_duplicate_detection = false`. In Premium, `partitioning_enabled` must be false (enforced). |
 | `topics`                          | `list(object({ name = string, partitioning_enabled = optional(bool), requires_duplicate_detection = optional(bool) }))` | ❌ | `[]` | Topics to create. Defaults: `partitioning_enabled = false`, `requires_duplicate_detection = false`. In Premium, `partitioning_enabled` must be false (enforced). |
 | `sku`                             | `string`        | ❌        | `"Premium"` | The SKU of the Service Bus namespace.                                                        |
@@ -52,6 +51,8 @@ specify how the service bus should be exposed:
 | `customer_managed_key`            | `object({ key_vault_key_id = string, user_assigned_identity_id = string })` | ❌ | `null` | CMK for encryption at rest (Premium only). Requires a managed identity with key vault access. |
 | `tags`                            | `map(string)`   | ❌        | `{}`     | Tags to assign to the resources.                                                             |
 
+Note: The module automatically uses the current Azure subscription from the configured provider (via `azurerm_client_config`). No `subscription_id` input variable is required.
+
 #### Notes on `Premium` SKU behavior
 
 - When `sku = "Premium"`:
@@ -62,6 +63,23 @@ specify how the service bus should be exposed:
 #### Notes on service mode
 
 - `network_mode = "service"` applies network rules only when `sku = "Premium"`. With non-Premium SKUs, network rules are not applied by this module; consider `public` or use `private` endpoints instead.
+
+**Reminder:** When using `network_mode = "service"` or `network_mode = "private"`, ensure every subnet listed in `subnet_ids` has the Service Endpoint `Microsoft.ServiceBus` enabled. Applies will fail if endpoints are missing.
+
+Example subnet configuration:
+```hcl
+module "vnet" {
+  source = "azure-terraform-module/vnet/azure"
+  version = "0.0.2"
+
+  vnet_name           = "elearning"
+  location            = var.resource_group_location
+  resource_group_name = var.resource_group_name
+  address_space       = ["10.0.0.0/16"]
+  subnet_prefixes = ["10.0.1.0/24","10.0.2.0/24"]
+  service_endpoints = ["Microsoft.ServiceBus"] ## Look at it
+}
+```
 
 ### 2.4. Intelligent private DNS zone management
 
@@ -126,7 +144,6 @@ module "servicebus" {
   namespace            = "my-svcbus-private-mode" # must be unique name
   resource_group_name  = "my-rg"
   location             = "eastus"
-  subscription_id      = "<your-subscription-id>" # required by azapi data sources
   network_mode         = "private"
 
   subnet_ids = [
@@ -164,7 +181,6 @@ module "servicebus" {
   namespace            = "my-svcbus-service-mode"
   resource_group_name  = "my-rg"
   location             = "eastus"
-  subscription_id      = "<your-subscription-id>"
   network_mode         = "service"
   sku                  = "Premium"
 
@@ -205,7 +221,6 @@ module "servicebus" {
   namespace            = "my-svcbus-public-mode"
   resource_group_name  = "my-rg"
   location             = "eastus"
-  subscription_id      = "<your-subscription-id>"
   network_mode         = "public"
   sku                  = "Standard"
 
@@ -252,7 +267,6 @@ terraform {
 
 provider "azurerm" {
   features {}
-  subscription_id = "<your-subscription-id>"
 }
 ```
 
