@@ -16,7 +16,7 @@ This Terraform module provisions an **Azure Service Bus** namespace and its asso
 ### 2.1. Prerequisites
 Ensure that you have the following:
 - Terraform `>= 1.5`
-- azurerm provider `~> 4.25.0`
+- azurerm provider `~> 5.0`
 - azapi provider `>= 1.0.0`
 - Proper permissions in your Azure subscription to create Service Bus, DNS zones, VNets, and private endpoints.
 
@@ -256,7 +256,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.25.0"
+      version = "~> 5.0"
     }
     azapi = {
       source  = "azure/azapi"

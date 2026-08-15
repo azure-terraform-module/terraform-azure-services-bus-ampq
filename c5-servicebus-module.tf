@@ -12,8 +12,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_servicebus
   count = local.is_private ? length(local.vnets_needing_links) : 0
   
   name                  = "${var.namespace}-tf-managed-vnet-link-${count.index}"
-  resource_group_name   = var.resource_group_name
-  private_dns_zone_name = local.private_dns_zone_name
+  private_dns_zone_id   = local.private_dns_zone_id
   virtual_network_id    = local.vnets_needing_links[count.index]
   registration_enabled  = true
   
